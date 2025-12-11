@@ -1,0 +1,92 @@
+[
+    {
+        "text": "At SkyStream Airlines, we understand that your pets are family. Small cats and dogs can travel in the cabin with you if they are in an approved carrier that fits under the seat in front of you. The fee is $125 each way.",
+        "metadata": {
+            "source": "skystream_policy",
+            "airline": "SkyStream",
+            "class": "Economy",
+            "topic": "pets"
+        }
+    },
+    {
+        "text": "SkyStream Airlines allows one carry-on bag and one personal item for all Economy passengers. The carry-on must not exceed 22 x 14 x 9 inches.",
+        "metadata": {
+            "source": "skystream_policy",
+            "airline": "SkyStream",
+            "class": "Economy",
+            "topic": "baggage"
+        }
+    },
+    {
+        "text": "Business Class passengers on SkyStream allow for two checked bags up to 70lbs each, complimentary.",
+        "metadata": {
+            "source": "skystream_policy",
+            "airline": "SkyStream",
+            "class": "Business",
+            "topic": "baggage"
+        }
+    },
+    {
+        "text": "For GlobalAir flights, pets are strictly prohibited in the cabin for all classes due to allergy policies, except for certified service animals.",
+        "metadata": {
+            "source": "globalair_policy",
+            "airline": "GlobalAir",
+            "class": "Economy",
+            "topic": "pets"
+        }
+    },
+    {
+        "text": "GlobalAir Business Class guests can bring a small pet in the cabin, provided they book the specific 'Pet Friendly' row 14.",
+        "metadata": {
+            "source": "globalair_policy",
+            "airline": "GlobalAir",
+            "class": "Business",
+            "topic": "pets"
+        }
+    },
+    {
+        "text": "SkyStream Economy meals are available for purchase. Complimentary snacks and non-alcoholic beverages are provided.",
+        "metadata": {
+            "source": "skystream_policy",
+            "airline": "SkyStream",
+            "class": "Economy",
+            "topic": "meal"
+        }
+    },
+    {
+        "text": "Chef-curated three-course meals are complimentary for all SkyStream Business Class travelers.",
+        "metadata": {
+            "source": "skystream_policy",
+            "airline": "SkyStream",
+            "class": "Business",
+            "topic": "meal"
+        }
+    },
+    {
+        "text": "GlobalAir provides a complimentary hot meal on all international flights for Economy passengers.",
+        "metadata": {
+            "source": "globalair_policy",
+            "airline": "GlobalAir",
+            "class": "Economy",
+            "topic": "meal"
+        }
+    },
+    {
+        "text": "Cancellations made 24 hours before departure are fully refundable for SkyStream Business Class tickets.",
+        "metadata": {
+            "source": "skystream_policy",
+            "airline": "SkyStream",
+            "class": "Business",
+            "topic": "cancellation"
+        }
+    },
+    {
+        "text": "SkyStream Economy tickets are non-refundable but can be exchanged for a travel voucher with a $50 fee.",
+        "metadata": {
+            "source": "skystream_policy",
+            "airline": "SkyStream",
+            "class": "Economy",
+            "topic": "cancellation"
+        }
+    }
+]
