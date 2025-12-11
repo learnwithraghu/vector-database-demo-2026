@@ -16,8 +16,8 @@ docker ps
 python3 -m venv venv
 source venv/bin/activate
 
-# 3. Install requirements (New: sentence-transformers!)
-pip install qdrant-client sentence-transformers
+# 3. Install requirements (New: sentence-transformers & streamlit!)
+pip install qdrant-client sentence-transformers streamlit watchdog
 ```
 
 ### 1. The Analogy: "The Intuitive Librarian"
@@ -66,3 +66,15 @@ We search for "**aliens attacking earth**".
 *   **Line 50**: `query = "Aliens attacking earth"`
 *   **Line 53**: `model.encode(query)` transforms our question.
 *   **Result**: The code prints the top matches. We expect "Arrival" to be at the top because its description ("gigantic spaceships touch down") is semantically closest to "aliens attacking".
+
+## 🤖 Bonus Information: The "Chatbot" Interface
+To make this more interactive, we have added a Streamlit App.
+
+1.  **Run the App**:
+    ```bash
+    streamlit run 03-semantic-search/chatbot_ui_03.py
+    ```
+2.  **Interact**:
+    *   Type a query like "I want to fly with my dog".
+    *   See the results dynamically!
+

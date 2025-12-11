@@ -21,8 +21,10 @@ We follow a progressive "Problem -> Solution" narrative.
 
 ### 3. [Semantic Search (The Problem)](./03-semantic-search)
 *   **Goal:** Ingest data and try "Semantic Search".
-*   **Run:** `python3 03-semantic-search/semantic_search.py`
+*   **Run (Backend):** `python3 03-semantic-search/semantic_search.py`
+*   **Run (Frontend):** `streamlit run 03-semantic-search/chatbot_ui_03.py`
 *   **Observation:** The results show mixed policies (confusing).
+
 
 ### 4. [Metadata Filtering (The Solution)](./04-metadata-filtering)
 *   **Goal:** Apply Filters.
