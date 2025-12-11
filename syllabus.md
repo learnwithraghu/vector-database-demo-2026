@@ -1,0 +1,112 @@
+# Course Syllabus: Zero to Hero - Building an Airline Policy Bot with Qdrant
+
+This syllabus outlines a "Zero to Hero" course designed to take students from basic vector database concepts to running a production-grade Airline Policy Bot.
+
+**Repository Structure & Demo Integration:**
+The course is divided into 7 main sections. Each section corresponds to a specific demo folder in the repository (`01` through `07`). The demos are embedded directly as the **Practical Exercise** for their respective sections.
+
+---
+
+## 📅 Section 1: Foundations of Vector Databases
+**Goal**: Understand the "Why" behind Vector Databases and their place in the data landscape.
+
+*   **Topics**:
+    *   **The Problem**: A real-world use case (e.g., "Find me a movie like The Matrix") where SQL (`WHERE title LIKE '%Matrix%'`) and NoSQL fail to capture *similarity*.
+    *   **The Solution**: Introduction to Vector Databases - bridging the gap between exact match and semantic meaning.
+    *   **History**: The evolution from keyword search (Lucene/Solr) to dense vector indices (FAISS) to managed Vector DBs.
+    *   **Landscape**: Overview of different Vector Databases (Qdrant, Pinecone, Milvus, Weaviate) and their trade-offs.
+    *   **Getting Started**: Setting up our chosen tool (Qdrant).
+*   **🛠️ Embedded Demo**:
+    *   **Demo 01: Setup and Connection (`01-setup-and-connection`)**
+    *   *Activities*: Launch Docker container, setup Python venv, run `connect.py` to confirm we are ready for the course.
+
+---
+
+## 📐 Section 2: Core Concepts & Vector Theory
+**Goal**: Understand what a vector is and how data is stored.
+
+*   **Topics**:
+    *   **Vectors as Coordinates**: The "Mixing Board" analogy (Dimensions).
+    *   **Distance Metrics**: How "closeness" equals "similarity".
+    *   **Collections**: Creating a collection with specific vector sizes.
+    *   **Payloads**: Storing metadata along with vectors.
+    *   **CRUD**: Manual Upsert ("Points") and Basic Search.
+*   **🛠️ Embedded Demo**:
+    *   **Demo 02: Hello Vector World (`02-hello-vector-world`)**
+    *   *Activities*: Manually create vectors for Users (Sci-Fi vs Romance fans), index them, and run a search to find "nearest neighbors".
+
+---
+
+## 🧠 Section 3: Semantic Search (The "Brain")
+**Goal**: Move from manual numbers to AI-generated meanings.
+
+*   **Topics**:
+    *   **Embeddings**: Transforming text into vectors using Models.
+    *   **Ingestion Pipelines**: Reading JSON data and vectorizing it.
+    *   **Semantic Search**: Searching by "Meaning" rather than "Keywords".
+    *   **Limitations**: Identifying when semantic search fails (e.g., getting mixed results for similar queries).
+*   **🛠️ Embedded Demo**:
+    *   **Demo 03: Semantic Search (`03-semantic-search`)**
+    *   *Activities*: Ingest airline policy data, run `semantic_search.py`, run `chatbot_ui.py` to see the bot answer questions (imperfectly).
+
+---
+
+## 🎯 Section 4: Context Awareness & Filtering
+**Goal**: Fix the "hallucinations" or mixed context issues.
+
+*   **Topics**:
+    *   **The Context Problem**: Why searching "baggage" gives results for both Economy and Business class.
+    *   **Metadata Filtering**: The SQL `WHERE` clause of Vector Search.
+    *   **Filter Logic**: `must` (AND), `should` (OR), `must_not` (NOT).
+    *   **Filtered Search**: Applying constraints *before* the vector search.
+*   **🛠️ Embedded Demo**:
+    *   **Demo 04: Metadata Filtering (`04-metadata-filtering`)**
+    *   *Activities*: Update search to include specific airline filters, run `filtering.py` to see precise results.
+
+---
+
+## 🔍 Section 5: Hybrid Search (Precision & Keywords)
+**Goal**: Handle specific entity searches (codes, IDs, names).
+
+*   **Topics**:
+    *   **Dense vs. Sparse Vectors**: "Vibes/Meaning" (Dense) vs. "Exact Match/Fingerprint" (Sparse).
+    *   **Sparse Embeddings**: Using tools like `fastembed` / BM25.
+    *   **Hybrid Querying**: Combining dense and sparse scores.
+    *   **Reranking**: (Optional mention) Improving order of results.
+*   **🛠️ Embedded Demo**:
+    *   **Demo 05: Hybrid Search (`05-hybrid-search`)**
+    *   *Activities*: Enable multi-vector config, ingest sparse vectors, search for specific terms like product codes using `hybrid_search.py`.
+
+---
+
+## 🛡️ Section 6: Production Operations & Admin
+**Goal**: Manage the lifecycle of the database.
+
+*   **Topics**:
+    *   **Observability**: Monitoring collection health (Points count, status).
+    *   **Zero-Downtime Updates**: Using **Aliases** to switch index versions without breaking the app.
+    *   **Data Safety**: Creating and restoring **Snapshots** (Backups).
+    *   **Scaling**: (Overview) Estimating RAM and resources.
+*   **🛠️ Embedded Demo**:
+    *   **Demo 06: Admin Operations (`06-admin-operations`)**
+    *   *Activities*: Create collection aliases, switch aliases between versions, trigger a snapshot backup using `admin_ops.py`.
+
+---
+
+## ☁️ Section 7: Cloud-Native Vector Storage (AWS S3)
+**Goal**: Explore serverless vector storage options at scale.
+
+*   **Topics**:
+    *   **Introduction to Amazon S3 Vectors**: Moving beyond managed instances to storage-integrated vectors.
+    *   **Architecture**: Vector Buckets and Vector Indexes (native S3 integration).
+    *   **Key Features**:
+        *   **Serverless**: No clusters to manage.
+        *   **Scalability**: Handles 10k+ indexes and millions of vectors per bucket.
+        *   **Cost**: Significantly lower storage costs compared to memory-based databases.
+    *   **Integration**: Using S3 Vectors with Bedrock and OpenSearch.
+*   **🛠️ Embedded Demo**:
+    *   **Demo 07: AWS S3 Vector Buckets (`07-aws-s3-vectors`)**
+    *   *Activities*:
+        1.  Create an S3 Vector Bucket via AWS Console.
+        2.  Create a Vector Index.
+        3.  Load data and query using the S3 Vector API (Python).
