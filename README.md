@@ -13,31 +13,37 @@ This repository uses **Qdrant**, a high-performance open-source vector search en
 
 We follow a progressive "Problem -> Solution" narrative.
 
-### 1. [Setup and Connection](./01-setup-and-connection)
-*   **Goal:** Get Qdrant running.
+### 1. [Getting Started](./01-Setup-and-Connection)
+*   **Goal:** Get Qdrant running and verify your environment.
 
-### 2. [Hello Vector World](./02-hello-vector-world)
-*   **Goal:** Basic concepts.
+### 2. [The First Vector](./02-Hello-Vector-World)
+*   **Goal:** Learn the basic concepts of vectors with a simple color demo.
 
-### 3. [Semantic Search (The Problem)](./03-semantic-search)
-*   **Goal:** Ingest data and try "Semantic Search".
-*   **Run (Backend):** `python3 03-semantic-search/semantic_search.py`
-*   **Run (Frontend):** `streamlit run 03-semantic-search/chatbot_ui_03.py`
-*   **Observation:** The results show mixed policies (confusing).
+### 3. [Understanding Embeddings](./03-Embedding-Basics)
+*   **Goal:** Dive deeper into how embeddings represent data.
 
+### 4. [Real World Embeddings](./04-Real-World-Embeddings)
+*   **Goal:** Use Sentence Transformers on real diet data to understand semantic similarity.
 
-### 4. [Metadata Filtering (The Solution)](./04-metadata-filtering)
-*   **Goal:** Apply Filters.
-*   **Run:** `python3 04-metadata-filtering/filtering.py`
+### 5. [Semantic Search (The Problem)](./05-Semantic-Search)
+*   **Goal:** Ingest data and try standard "Semantic Search".
+*   **Observation:** You might see mixed policies or confusing results without filters.
+
+### 6. [Precision with Metadata (The Solution)](./06-Metadata-Filtering)
+*   **Goal:** Apply Filters to solve the confusion.
 *   **Observation:** The search now shows the correct policy in "Context-Aware" mode.
 
-### 5. [Hybrid Search (Precision)](./05-hybrid-search)
-*   **Goal:** Find exact fees.
-*   **Run:** `python3 05-hybrid-search/hybrid_search.py`
+### 7. [Hybrid Search](./07-Hybrid-Search)
+*   **Goal:** Combine keyword search with vector search for exact fee lookups.
 
-### 6. [Admin Operations](./06-admin-operations)
-*   **Goal:** Manage aliases and snapshots.
+### 8. [Admin Operations](./08-Admin-Operations)
+*   **Goal:** Manage aliases, snapshots, and collection maintenance.
 
+### 9. [Cloud Integration](./09-AWS-S3-Integration)
+*   **Goal:** Learn how to integrate with AWS S3 for vector storage.
+
+### 10. [Reset Environment](./99-Reset-Environment)
+*   **Goal:** Utilities to clear your environment and start fresh.
 
 ---
 
