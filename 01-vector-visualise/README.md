@@ -1,16 +1,41 @@
-# 📈 Vector Visualization
+# Document Embedding Visualization with ChromaDB
 
-This directory contains the `02_visualization.ipynb` notebook. It was separated from the main Streamlit application quickstart to keep the main application clean and focused solely on the user interface. 
+This folder contains a notebook that demonstrates **loading a PDF, chunking text, embedding with sentence-transformers, storing in ChromaDB, and visualizing the embedding space in 3D with Plotly**.
 
-## Purpose
-The notebook is an advanced module that demonstrates how to extract vectors from LanceDB and project the high-dimensional data (384 dimensions) down to 2D space using PCA (Principal Component Analysis) for visualization in Plotly. This helps students visualize the semantic clustering of the 5-year shareholder letter corpus.
+## Notebook
+
+- **`chroma_embedding_visualization.ipynb`** – End-to-end pipeline:
+  1. Load a PDF and extract text (PyPDF2)
+  2. Chunk text with overlap (500 chars, 50 overlap)
+  3. Create a ChromaDB collection with sentence-transformers (`all-MiniLM-L6-v2`)
+  4. Add chunks and metadata to ChromaDB
+  5. Visualize embeddings in 3D with **Plotly** (PCA-reduced, coloured by chunk position)
+
+## Setup
+
+1. **Run the setup script** (creates a venv and installs dependencies):
+
+   ```bash
+   cd 01-vector-visualise
+   ./setup.sh
+   ```
+
+2. **Select the kernel**  
+   In Jupyter/VS Code, choose **Python (chroma_demo)**.
+
+3. **Add a PDF**  
+   Place your PDF in this folder (e.g. `use_2025_budget.pdf`) and set `PDF_PATH` in the notebook.
 
 ## Requirements
-If you wish to run this notebook locally, you will need a Python environment with:
-- `lancedb`
-- `pandas`
-- `scikit-learn`
-- `plotly`
-- `ipykernel`
 
-And you must point it to a valid LanceDB database containing embeddings (such as the one generated in `00-Quickstart`).
+The setup script installs:
+
+- `chromadb`
+- `PyPDF2`
+- `sentence-transformers`
+- `plotly`
+- `scikit-learn`
+- `pandas`
+- `jupyter`, `ipykernel`
+
+First run may take ~30–60 s for imports and ~1–2 min for the embedding model download.
