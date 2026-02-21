@@ -1,6 +1,0 @@
-#!/Users/raghunandana.sanur/Desktop/test-repo/vector-database-demo-2026/10-Vector-Similarity-Explained/venv/bin/python3
-import sys
-from jupyterlab.labhubapp import main
-if __name__ == '__main__':
-    sys.argv[0] = sys.argv[0].removesuffix('.exe')
-    sys.exit(main())

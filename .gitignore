@@ -1,0 +1,12 @@
+# Python environments and generic ignored files
+.venv/
+.venv
+venv/
+venv
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+
+# Local vector DB data
+lancedb_data/
