@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  zvec-demo:
+    build: .
+    container_name: zvec-query-latency-demo
+    ports:
+      - "8888:8888"
+    volumes:
+      # Mount the notebook for live editing
+      - ./query_latency_demo.ipynb:/app/query_latency_demo.ipynb
+      # Mount PDF data
+      - ./pdf_doc:/app/pdf_doc
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    stdin_open: true
+    tty: true
