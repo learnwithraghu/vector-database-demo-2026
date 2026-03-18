@@ -1,0 +1,8 @@
+lancedb>=0.20.0
+sentence-transformers>=2.5.1
+numpy>=1.24.0
+pandas>=2.0.0
+pyarrow>=14.0.0
+jupyterlab>=4.0.0
+ipykernel>=6.25.0
+
