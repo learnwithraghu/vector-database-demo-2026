@@ -1,39 +1,69 @@
-# 🔍 Vector Database Internals — Indexing & Quantization Demo
+# Vector Indexing Notebooks
 
-A hands-on series of Jupyter notebooks demonstrating how **indexing** (IVF) and **quantization** (PQ / SQ) work inside a vector database, using [LanceDB](https://lancedb.com/) and 200K synthetic vectors.
+This folder contains notebooks to teach vector indexing concepts.
 
-## Quick Start
+## Simple notebook for students
 
-### Step 1: Run the setup script
+Start with:
+
+- `00_simple_indexing_demo.ipynb`
+
+This notebook is intentionally short and beginner-friendly. It shows:
+
+- vectors stored in ChromaDB
+- search before indexing (linear scan)
+- search after a simple index-like grouping
+- why indexing reduces distance checks
+
+## Other notebooks
+
+- `01_indexing.ipynb` (advanced indexing concepts)
+- `02_product_quantization.ipynb` (advanced quantization concepts)
+
+## Run with Docker (single image)
+
+Run these commands from inside this folder:
 
 ```bash
-cd /path/to/this/folder
-bash setup.sh
+cd 12-vector-indexing
 ```
 
-This creates a Python virtual environment (`.venv`), installs all dependencies, and registers a Jupyter kernel named **"Vector DB Demo (Python)"**.
+### 1) Clean old container/image first
 
-### Step 2: Attach the kernel to the notebooks
+```bash
+docker rm -f vector-indexing-demo 2>/dev/null || true
+docker rmi vector-indexing-demo 2>/dev/null || true
+```
 
-1. Open any of the notebooks below in **VS Code** or **Jupyter**
-2. In the kernel picker (top-right in VS Code, or Kernel menu in Jupyter), select:
-   > **Vector DB Demo (Python)**
-3. Run the cells!
+### 2) Build image
 
-> ⚠️ **Important:** You must select the `Vector DB Demo (Python)` kernel, not your default Python kernel. This ensures the correct virtual environment and packages are used.
+```bash
+docker build -t vector-indexing-demo .
+```
 
-## Notebooks
+### 3) Run Jupyter
 
-Run them in order — each one builds on concepts from the previous:
+```bash
+docker run --rm -p 8888:8888 --name vector-indexing-demo vector-indexing-demo
+```
 
-| # | Notebook | Topic |
-|---|----------|-------|
-| 1 | `01_indexing.ipynb` | Brute-force baseline → IVF index → `nprobes` tradeoff |
-| 2 | `02_product_quantization.ipynb` | PQ compression → refine factor → sub-vector tuning |
-| 3 | `03_scalar_quantization.ipynb` | SQ compression → PQ vs SQ comparison → decision guide |
+Then open [http://localhost:8888](http://localhost:8888) and run `00_simple_indexing_demo.ipynb`.
 
-## Requirements
+## Cleanup
 
-- Python 3.9+
-- macOS / Linux
-- ~500 MB disk space (vectors + indexes)
+If you used `--rm`, the container is automatically removed when stopped.
+
+Optional manual cleanup:
+
+```bash
+docker stop vector-indexing-demo 2>/dev/null || true
+docker rm vector-indexing-demo 2>/dev/null || true
+docker rmi vector-indexing-demo
+```
+
+## Local setup without Docker (optional)
+
+```bash
+cd 12-vector-indexing
+bash setup.sh
+```
