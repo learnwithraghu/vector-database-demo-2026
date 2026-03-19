@@ -1,0 +1,14 @@
+All cabin crew must complete annual security training that covers access control,
+identification of suspicious behavior, and immediate reporting procedures to the
+flight deck and ground security teams.
+
+Customer data, including booking details and payment information, must be
+processed and stored only in approved systems that implement encryption in
+transit and at rest. Access to this data is limited to authorized personnel on a
+need-to-know basis.
+
+Pre-flight safety briefings must be delivered on every flight and documented in
+the operational log. Any deviations from standard procedures, including
+equipment issues or passenger incidents, must be recorded for later compliance
+review.
+

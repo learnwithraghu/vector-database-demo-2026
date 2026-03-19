@@ -1,69 +1,209 @@
-# Demo 7: AWS S3 Vector Buckets (Cloud Scale)
+## Demo: AWS S3 Vector Buckets (Cloud Scale)
 
-## 🎯 The Goal: Infinite Scale
-We have built vector apps on our local machine (Docker). That's great for development.
-But what if you have **1 Billion Vectors**?
-Managing a cluster of servers is hard. AWS S3 Vectors allows you to store and search vectors directly in S3, leveraging the specific "Vector Bucket" type for serverless scale.
+### 🎯 Goal
+Connect to an AWS S3 **Vector Bucket** using one simple connection test script, then use a second script to upload + query a realistic airline policy document, with the embedding/query parts commented so you can reveal them step‑by‑step.
 
-*   **Previous Step**: Admin Operations (Local).
-*   **Next Step**: Course Completion.
+---
 
-## 🛠️ Pre-flight Check
-**Prerequisites**:
-1.  An active AWS Account.
-2.  AWS CLI configured locally (optional, for the Python script).
-3.  `boto3` installed (`pip install boto3`).
+### 0. Pre‑flight Check
 
-## 📝 Steps for the Instructor
+- **AWS account**: You must have an active AWS account.
+- **Permissions**: Ability to create S3 buckets and objects.
+- **Python**: Python 3.9+ installed on your laptop.
+- **boto3**: Will be installed inside a virtual environment (see below).
 
-### 1. The Concept: "Storage IS the Database"
-*   Traditionally, S3 is just for "files".
-*   If you wanted to search them, you had to move them to a Database (like Qdrant/Pinecone).
-*   **S3 Vectors** blurs this line. The bucket *understands* vectors.
-*   **Benefits**:
-    *   **Cost**: S3 storage is cheap.
-    *   **Scale**: No nodes to manage.
+---
 
-### 2. Manual Setup (AWS Console)
-*Guide the students through the AWS Management Console.*
+### 1. Steps to Create an S3 Vector Bucket (Console)
 
-1.  **Navigate to S3**: Go to the S3 Dashboard.
-2.  **Create Bucket**:
-    *   Click "Create bucket".
-    *   **Important**: Select **"Vector Bucket"** (if available in your region) or standard bucket with "Vector Indexing" enabled.
-    *   Name: `airline-policy-vectors-[your-name]`.
-3.  **Define Index**:
-    *   Go to the "Indexes" tab of your new bucket.
-    *   Click "Create Vector Index".
-    *   **Algorithm**: HNSW (Hierarchical Navigable Small World).
-    *   **Dimensions**: 384 (matching our embedding model).
-    *   **Distance Metric**: Cosine.
-4.  **Ready**: Once the index status is "Active", we can push data.
+Explain that **storage becomes the database**:
+- **Traditionally**: S3 holds files, databases (Qdrant, Pinecone, etc.) hold vectors.
+- **With Vector Buckets**: S3 can natively index and search vectors stored inside it.
 
-### 3. Code Walkthrough (`s3_vector_demo.py`)
+Walk students through the console:
 
-This script mimics the behavior of interacting with the S3 Vector API.
+1. **Open S3 console**
+   - Go to AWS Management Console → `S3`.
+2. **Create Vector Bucket**
+   - Click **Create bucket**.
+   - Choose a region (e.g. `us-east-1`) where **Vector Bucket** is available.
+   - Bucket name: `airline-policy-vectors-<your-name>`.
+   - Under bucket type / features, select **Vector bucket** (or enable vector indexing if shown separately).
+   - Create the bucket.
+3. **Create Vector Index**
+   - Open the new bucket.
+   - Go to the **Indexes** (or **Vector indexes**) tab.
+   - Click **Create vector index**.
+   - **Index name**: `airline-policy-index`.
+   - **Dimensions**: `3` (we use tiny 3‑D toy vectors in the demo so students can follow the math).
+   - **Distance metric**: `Cosine`.
+   - Create the index and wait until its status is **Active**.
 
-#### Phase 1: Authentication
-*   We use `boto3` to talk to AWS.
-*   Ensure your environment variables (`AWS_ACCESS_KEY_ID`, etc.) are set.
+Tell students: **we will only write a handful of objects**, and we will clean them up at the end.
 
-#### Phase 2: Upsert (PutItem)
-*   Instead of `client.upsert()`, we might use `s3.put_object()` with special metadata headers or a devoted `s3-vector` client method.
-*   *Note*: In this demo, we use a simplified hypothetical API structure for clarity: `put_vector_item`.
+---
 
-#### Phase 3: Search (Query)
-*   We send a vector to the bucket endpoint.
-*   AWS computes the similarity and returns the S3 keys (filenames) of the closest matches.
+### 2. Stage 2 – Python: Connection Test Only (`connect_test_s3_vector.py`)
 
-### 4. Running the Demo
+You will use `connect_test_s3_vector.py` as a **small, fully runnable script**:
+- Code is **not commented** – you can run it end‑to‑end to prove the connection.
+- It only:
+  - creates a simple S3 client with demo AWS credentials, and
+  - calls `list_objects_v2` on your Vector Bucket to validate connectivity.
+
+#### 2.1 Create and Activate a Python Virtual Environment
+
+From the `10-AWS-S3-Integration` directory:
+
 ```bash
-# 1. Install AWS SDK
-pip install boto3
+# create venv
+python3 -m venv .venv
 
-# 2. Run the script
-python s3_vector_demo.py
+# macOS / Linux: activate
+source .venv/bin/activate
+
+# (optional) Windows PowerShell:
+# .venv\Scripts\Activate.ps1
+
+# install dependencies inside the venv
+pip3 install --upgrade pip
+pip3 install boto3
 ```
 
-## ⚠️ Note on Cost
-S3 Vectors is serverless, meaning you pay for **storage** and **requests**. It is generally cheaper than running EC2 instances 24/7, but always clean up your specific test buckets after the workshop!
+Remind students:
+- The **prompt will change** (usually shows `(.venv)`).
+- All Python packages for this demo stay isolated inside `.venv`.
+
+#### 2.2 Walkthrough of `connect_test_s3_vector.py`
+
+Open `connect_test_s3_vector.py` and highlight:
+
+1. **AWS constants + bucket name**
+   - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`
+   - `BUCKET_NAME` set to `airline-policy-vectors-<your-name>`.
+2. **`get_s3_client()`**
+   - Uses `boto3.Session` with the constants.
+   - Prints a clear message when the client is created.
+3. **`validate_vector_bucket_connection(client)`**
+   - Calls `list_objects_v2(Bucket=BUCKET_NAME, MaxKeys=5)`.
+   - On HTTP 200:
+     - prints a success message, and
+     - either shows a few object keys (if any) or states that the bucket is empty but reachable.
+   - On errors:
+     - prints clear ❌ messages (e.g. bucket missing or credentials invalid).
+
+Run the script from the activated venv:
+
+```bash
+python connect_test_s3_vector.py
+```
+
+Use the printed output to confirm the Vector Bucket + credentials are correct before moving to embeddings.
+
+---
+
+### 3. Stage 3 – Upload a Policy Document to the Vector Bucket and Query It (`load_and_query_embedding.py`)
+
+In Stage 3 you switch to the second script: `load_and_query_embedding.py`.
+This script:
+- has **active connection code** at the top (so it can run), and
+- keeps the embedding / upload / query logic as **commented blocks** that you will reveal step‑by‑step.
+
+We also ship a ready‑made document file: `airline_security_policy.txt` in the same folder.
+
+The flow for this stage:
+- Use the **already‑generated** `airline_security_policy.txt` as your demo policy.
+- Gradually uncomment code in `load_and_query_embedding.py` to:
+  - load and embed the local document,
+  - upload text + vectors to S3, and
+  - run a cosine‑similarity query to retrieve the most relevant section.
+
+#### 3.1 Walkthrough of `load_and_query_embedding.py`
+
+Open `load_and_query_embedding.py` and show students:
+
+1. **Imports + credentials + S3 client (uncommented, already runnable)**
+   - `boto3`, `json`, `math`, `Path`.
+   - AWS constants and `BUCKET_NAME` (same as in the connection test).
+   - `get_s3_client()` prints that it is creating an S3 client for this demo.
+2. **STAGE 1 – `load_local_policy_paragraphs()` (commented)**
+   - Reads `airline_security_policy.txt` from disk.
+   - Splits the text into paragraphs.
+   - Assigns a tiny 3‑D vector to each paragraph:
+     - \( \text{dimension}_1 = \) security
+     - \( \text{dimension}_2 = \) data / compliance
+     - \( \text{dimension}_3 = \) operations
+   - Prints how many paragraphs were loaded.
+3. **STAGE 2 – `upload_policy_embeddings(client)` (commented)**
+   - Uploads the full policy text to:
+     - `documents/airline_security_policy.txt`
+   - Uploads each paragraph + vector as JSON under:
+     - `policy_vectors/section_0.json`, `section_1.json`, etc.
+   - Uses clear `[STAGE 2]` print statements for each upload.
+4. **STAGE 3 – `cosine_similarity()` + `query_policy_embeddings(client)` (commented)**
+   - Defines a simple cosine similarity function.
+   - Uses a security‑heavy query vector to represent:
+     - “How do we train cabin crew on security?”
+   - Lists all `policy_vectors/` objects, downloads each, computes similarity, and prints the top matches with `[STAGE 3]` messages.
+
+At the bottom, the `main()` function:
+- creates the S3 client and prints that the demo is ready,
+- contains commented example calls you will uncomment in order:
+  - `load_local_policy_paragraphs()`
+  - `upload_policy_embeddings(client)`
+  - `query_policy_embeddings(client)`
+
+Run from the activated venv:
+
+```bash
+python load_and_query_embedding.py
+```
+
+At first, it will just test connection and tell you to uncomment the STAGE blocks.
+Then, as you uncomment each stage, re‑run to show students each step of the pipeline.
+
+Finally, **clean up credentials and code**:
+- Comment out or remove your AWS keys from both Python scripts once the workshop is over.
+- Deactivate the virtual environment:
+
+```bash
+deactivate
+```
+
+- Optionally delete the `.venv` directory and/or this demo folder once you are finished teaching.
+
+This keeps **student AWS accounts safe** and ensures no stray resources or credentials remain.
+
+---
+
+### 4. IAM Policy Example for S3 Vectors
+
+S3 Vectors uses a **separate IAM namespace** (`s3vectors:*`) from classic S3 (`s3:*`).
+Having `AmazonS3FullAccess` is **not enough** to call `ListVectorBuckets`, `PutVectors`, or `QueryVectors`.
+
+Here is an example **inline / customer‑managed policy** you can attach to the IAM user or role that runs this demo (adjust ARNs to your account, region, and bucket/index names):
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3vectors:ListVectorBuckets",
+        "s3vectors:GetVectorBucket",
+        "s3vectors:ListIndexes",
+        "s3vectors:GetIndex",
+        "s3vectors:PutVectors",
+        "s3vectors:QueryVectors"
+      ],
+      "Resource": [
+        "arn:aws:s3vectors:us-east-1:666234783044:vector-bucket/airline-policy-vectors-*",
+        "arn:aws:s3vectors:us-east-1:666234783044:index/airline-policy-vectors-*/*"
+      ]
+    }
+  ]
+}
+```
+
+You can start with a broader `Resource` if needed while experimenting, then tighten it later for production.
