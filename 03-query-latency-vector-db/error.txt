@@ -1,0 +1,56 @@
+from __future__ import annotations
+
+import time
+from pathlib import Path
+from typing import Dict, List
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sentence_transformers import SentenceTransformer
+import zvec
+
+COLLECTION_PATH = Path("nfl_2025_collection")
+MODEL_NAME = "all-MiniLM-L6-v2"
+TOP_K = 5
+RUNS_PER_QUERY = 30
+
+if not COLLECTION_PATH.exists():
+    raise FileNotFoundError(
+        "Collection not found. Run 01_build_embeddings_one_cell.ipynb first."
+    )
+
+zvec.init(log_type=zvec.LogType.CONSOLE, log_level=zvec.LogLevel.WARN)
+# Open read-only so this notebook can run even if the build notebook still holds a write lock.
+collection = zvec.open(
+    path=str(COLLECTION_PATH),
+    option=zvec.CollectionOption(read_only=True),
+)
+model = SentenceTransformer(MODEL_NAME)
+
+print("Collection loaded in read-only mode and model is ready.")
+
+Error 
+---------------------------------------------------------------------------
+RuntimeError                              Traceback (most recent call last)
+Cell In[2], line 25
+     23 zvec.init(log_type=zvec.LogType.CONSOLE, log_level=zvec.LogLevel.WARN)
+     24 # Open read-only so this notebook can run even if the build notebook still holds a write lock.
+---> 25 collection = zvec.open(
+     26     path=str(COLLECTION_PATH),
+     27     option=zvec.CollectionOption(read_only=True),
+     28 )
+     29 model = SentenceTransformer(MODEL_NAME)
+     31 print("Collection loaded in read-only mode and model is ready.")
+
+File /usr/local/lib/python3.11/site-packages/zvec/zvec.py:225, in open(path, option)
+    207 def open(path: str, option: CollectionOption = CollectionOption()) -> Collection:
+    208     """Open an existing collection from disk.
+    209 
+    210     The collection must have been previously created with ``create_and_open``.
+   (...)    223         >>> coll = zvec.open("./my_collection")
+    224     """
+--> 225     _collection = _Collection.Open(path, option)
+    226     return Collection._from_core(_collection)
+
+RuntimeError: Can't lock read-only collection
