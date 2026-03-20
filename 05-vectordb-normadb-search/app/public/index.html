@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SQL vs Vector Search Classroom Demo</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>SQL vs Vector Search</h1>
+      <p class="subtitle">Load one CSV and compare Postgres SQL with LanceDB semantic retrieval.</p>
+    </header>
+
+    <section class="ingest-panel">
+      <div class="ingest-controls">
+        <label for="csvFile">CSV File</label>
+        <input id="csvFile" type="file" accept=".csv" />
+        <button id="previewCsvBtn">Preview CSV</button>
+        <button id="loadBtn" class="accent">Load Into Postgres + LanceDB</button>
+      </div>
+      <div id="status" class="status">Choose a CSV file, preview it, then load.</div>
+      <div id="csvPreview" class="csv-preview"></div>
+    </section>
+
+    <main class="labs">
+      <section class="panel sql-panel">
+        <h2>SQL Lab</h2>
+        <p class="hint">Use SELECT queries against <code>documents</code>.</p>
+        <textarea id="sqlEditor" spellcheck="false">SELECT id, title, category, priority, status
+FROM documents
+      WHERE category = 'access'
+ORDER BY created_at DESC
+LIMIT 5;</textarea>
+        <button id="runSqlBtn">Run SQL Query</button>
+        <div id="sqlMeta" class="meta"></div>
+        <div id="sqlResults" class="results"></div>
+      </section>
+
+      <section class="panel vector-panel">
+        <h2>LanceDB Vector Lab</h2>
+        <p class="hint">Search by intent with natural language against LanceDB. The app returns the top 5 semantic matches.</p>
+        <input id="vectorInput" type="text" placeholder="Example: I am locked out and my sign in code never arrives" />
+        <button id="runVectorBtn">Run Vector Search</button>
+        <div id="vectorMeta" class="meta"></div>
+        <div id="vectorResults" class="results"></div>
+      </section>
+    </main>
+
+    <section class="inspect-grid">
+      <article class="panel">
+        <h3>SQL Table Snapshot</h3>
+        <div id="dbSnapshot" class="results"></div>
+      </article>
+      <article class="panel">
+        <h3>LanceDB Snapshot</h3>
+        <div id="vectorSnapshot" class="results"></div>
+      </article>
+    </section>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

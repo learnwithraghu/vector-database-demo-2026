@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: sql_vector_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: vector_demo
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: ./app
+    container_name: sql_vector_app
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/vector_demo
+      VECTOR_DB_DIR: /app/lancedb-data
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    volumes:
+      - lancedata:/app/lancedb-data
+
+volumes:
+  pgdata:
+  lancedata:

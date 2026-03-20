@@ -1,0 +1,16 @@
+{
+  "name": "sql-vs-vector-demo",
+  "version": "1.0.0",
+  "description": "Classroom demo for SQL query vs vector search",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@lancedb/lancedb": "^0.18.2",
+    "csv-parse": "^5.5.6",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.2",
+    "pg": "^8.13.1"
+  }
+}
