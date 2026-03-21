@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Binary Quantization — Student Lab</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Styrene A', 'Styrene B', ui-sans-serif, system-ui, -apple-system, sans-serif;
+      background: #FFFFFF;
+      color: #191919;
+      min-height: 100vh;
+      padding: 24px 24px;
+    }
+
+    .container { max-width: 780px; margin: 0 auto; }
+
+    .badge {
+      display: inline-block;
+      background: #FFF7ED;
+      border: 1px solid #FDBA74;
+      color: #D97706;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 12px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── Stepper ── */
+    .stepper {
+      display: flex;
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+    .step-item {
+      flex: 1;
+      padding: 12px 8px;
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #9a9a9a;
+      cursor: pointer;
+      border-right: 1px solid #e5e5e5;
+      transition: all 0.15s;
+      background: #fff;
+    }
+    .step-item:last-child { border-right: none; }
+    .step-item.active {
+      color: #D97706; background: #FFFBF5;
+      font-weight: 600; border-bottom: 2px solid #D97706;
+    }
+    .step-item.done { color: #3a9e65; background: #f4fbf7; }
+    .step-num { display: block; font-size: 0.95rem; margin-bottom: 2px; }
+
+    /* ── Card ── */
+    .card {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+    .card-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: #9a9a9a;
+      margin-bottom: 16px;
+    }
+
+    /* ── Explain ── */
+    .explain {
+      background: #FAFAF8;
+      border-left: 3px solid #D97706;
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+      font-size: 0.84rem;
+      color: #444;
+      line-height: 1.65;
+      margin-bottom: 20px;
+    }
+    .explain strong { color: #191919; }
+
+    /* ── Buttons ── */
+    .btn {
+      padding: 9px 18px;
+      border-radius: 9px;
+      border: none;
+      font-size: 0.84rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .btn-primary { background: #D97706; color: #fff; }
+    .btn-primary:hover { background: #B45309; }
+    .btn-ghost { background: #fff; color: #6B6B6B; border: 1px solid #e5e5e5; }
+    .btn-ghost:hover { background: #FAFAF8; }
+    .btn-large { padding: 13px 32px; font-size: 0.95rem; border-radius: 12px; }
+
+    .nav { display: flex; justify-content: space-between; margin-top: 4px; }
+
+    /* ════════════ LANDING ════════════ */
+    .landing { text-align: center; padding: 20px 0 32px; }
+    .landing h1 {
+      font-size: 1.9rem; font-weight: 700;
+      letter-spacing: -0.03em; color: #191919;
+      margin-bottom: 10px;
+    }
+    .landing .sub {
+      color: #6B6B6B; font-size: 0.95rem;
+      margin-bottom: 36px; line-height: 1.6;
+    }
+    .key-idea {
+      background: #FAFAF8;
+      border: 1px solid #FDBA74;
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-size: 0.84rem;
+      color: #6B6B6B;
+      line-height: 1.6;
+      margin-bottom: 32px;
+      text-align: left;
+    }
+    .key-idea strong { color: #D97706; }
+    .journey { display: flex; flex-direction: column; gap: 12px; margin-bottom: 36px; text-align: left; }
+    .journey-step {
+      display: flex; align-items: flex-start; gap: 16px;
+      background: #fff; border: 1px solid #e5e5e5;
+      border-radius: 14px; padding: 18px 20px;
+    }
+    .journey-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; flex-shrink: 0;
+    }
+    .journey-icon.orange { background: #FFF7ED; }
+    .journey-icon.blue   { background: #eff4ff; }
+    .journey-icon.green  { background: #f0faf4; }
+    .journey-icon.purple { background: #f5f0ff; }
+    .journey-body h3 { font-size: 0.9rem; font-weight: 600; color: #191919; margin-bottom: 4px; }
+    .journey-body p  { font-size: 0.82rem; color: #6B6B6B; line-height: 1.5; }
+    .journey-connector {
+      width: 2px; height: 14px;
+      background: #e5e5e5; margin-left: 36px;
+    }
+
+    /* ════════════ ENCODE ════════════ */
+    .vec-list { display: flex; flex-direction: column; gap: 8px; }
+    .vec-row {
+      display: grid;
+      grid-template-columns: 44px 1fr 20px 1fr;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #FAFAF8;
+      border: 1px solid #e5e5e5;
+      border-radius: 10px;
+    }
+    .vec-name { font-size: 0.72rem; font-weight: 600; color: #9a9a9a; }
+    .vec-name.q { color: #D97706; }
+    .cells { display: flex; gap: 3px; }
+    .cell {
+      flex: 1; min-width: 0; height: 34px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.6rem; font-weight: 600; white-space: nowrap;
+    }
+    .cell.bit-1 { background: #e8f6ee; border: 1px solid #a8d9bc; color: #2e7d52; }
+    .cell.bit-0 { background: #fdecea; border: 1px solid #f5b8b3; color: #c0392b; }
+    .arrow { color: #ccc; font-size: 0.85rem; text-align: center; }
+
+    /* ════════════ SEARCH ════════════ */
+    .search-row {
+      display: grid;
+      grid-template-columns: 44px 1fr 20px 1fr 90px 36px;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #FAFAF8;
+      border: 1px solid #e5e5e5;
+      border-radius: 10px;
+      margin-bottom: 8px;
+    }
+    .search-row.is-query { border-color: #FDBA74; background: #FFFBF5; }
+    .search-row.is-hit   { border-color: #a8d9bc; background: #f4fbf7; }
+    .score-box { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+    .pill {
+      font-size: 0.65rem; font-weight: 600;
+      padding: 2px 7px; border-radius: 20px; white-space: nowrap;
+    }
+    .pill.cos { background: #eff4ff; color: #3b6fd4; border: 1px solid #c5d5f8; }
+    .pill.ham { background: #f0faf4; color: #2e7d52; border: 1px solid #a8d9bc; }
+    .dot-col { display: flex; flex-direction: column; gap: 2px; align-items: center; font-size: 0.75rem; }
+
+    /* ════════════ PROVE ════════════ */
+    .prove-intro {
+      background: #FAFAF8; border: 1px solid #e5e5e5;
+      border-radius: 12px; padding: 16px 20px;
+      margin-bottom: 20px; font-size: 0.84rem;
+      color: #444; line-height: 1.6;
+    }
+    .prove-intro strong { color: #191919; }
+    .match-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; margin-bottom: 20px; }
+    .match-table th {
+      text-align: left; font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 0.07em; text-transform: uppercase;
+      color: #9a9a9a; padding: 8px 12px; border-bottom: 1px solid #e5e5e5;
+    }
+    .match-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0ef; vertical-align: middle; }
+    .match-table tr:last-child td { border-bottom: none; }
+    .match-table tr.match-row { background: #f4fbf7; }
+    .match-table tr.miss-row  { background: #fef7f6; }
+    .rank-dot {
+      width: 22px; height: 22px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 0.65rem; font-weight: 700;
+    }
+    .verdict {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.78rem; font-weight: 600;
+      padding: 3px 10px; border-radius: 20px;
+    }
+    .verdict.yes { background: #e8f6ee; color: #2e7d52; border: 1px solid #a8d9bc; }
+    .verdict.no  { background: #fdecea; color: #c0392b; border: 1px solid #f5b8b3; }
+    .recall-banner {
+      padding: 20px 24px; border-radius: 14px;
+      display: flex; align-items: center; gap: 20px;
+    }
+    .recall-banner.good { background: #f4fbf7; border: 1px solid #a8d9bc; }
+    .recall-banner.bad  { background: #fef7f6; border: 1px solid #f5b8b3; }
+    .recall-num { font-size: 2.4rem; font-weight: 700; line-height: 1; }
+    .recall-banner.good .recall-num { color: #2e7d52; }
+    .recall-banner.bad  .recall-num { color: #c0392b; }
+    .recall-sub { font-size: 0.7rem; color: #9a9a9a; margin-top: 2px; }
+    .recall-desc { font-size: 0.84rem; color: #444; line-height: 1.6; }
+    .recall-desc strong { color: #191919; }
+
+    .stage-recap {
+      margin-top: 20px;
+      padding: 14px 18px;
+      background: #FAFAF8;
+      border-radius: 10px;
+      border: 1px solid #e5e5e5;
+      font-size: 0.82rem;
+      color: #6B6B6B;
+      line-height: 1.55;
+    }
+    .stage-recap strong { color: #191919; }
+
+    .takeaways {
+      background: #FAFAF8;
+      border: 1px solid #e5e5e5;
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 20px;
+    }
+    .takeaways ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 0.88rem;
+      color: #444;
+      line-height: 1.65;
+    }
+    .takeaways li {
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+      padding-left: 1.1em;
+      text-indent: -1.1em;
+    }
+    .takeaways li:last-child { border-bottom: none; }
+
+    /* ════════════ ENDING PAGE ════════════ */
+    .ending { padding: 8px 0 32px; }
+    .ending-hero {
+      text-align: center;
+      padding: 32px 24px 28px;
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 16px;
+      margin-bottom: 20px;
+    }
+    .ending-hero h2 {
+      font-size: 1.5rem; font-weight: 700;
+      letter-spacing: -0.02em; color: #191919;
+      margin-bottom: 8px;
+    }
+    .ending-hero p { font-size: 0.9rem; color: #6B6B6B; line-height: 1.6; max-width: 500px; margin: 0 auto; }
+
+    /* Tradeoff slider section */
+    .tradeoff-card {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+    .tradeoff-title {
+      font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: #9a9a9a; margin-bottom: 6px;
+    }
+    .tradeoff-subtitle {
+      font-size: 1rem; font-weight: 600; color: #191919;
+      margin-bottom: 20px;
+    }
+
+    .dim-slider-wrap {
+      margin-bottom: 24px;
+    }
+    .dim-slider-label {
+      display: flex; justify-content: space-between;
+      font-size: 0.8rem; color: #6B6B6B; margin-bottom: 8px;
+    }
+    .dim-slider-label strong { color: #191919; }
+    input[type=range] {
+      width: 100%; accent-color: #D97706;
+      height: 6px; border-radius: 3px; cursor: pointer;
+    }
+    .dim-ticks {
+      display: flex; justify-content: space-between;
+      font-size: 0.68rem; color: #bbb; margin-top: 6px;
+      padding: 0 2px;
+    }
+
+    /* Bars */
+    .bar-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .bar-row { display: flex; align-items: center; gap: 12px; }
+    .bar-label {
+      font-size: 0.75rem; font-weight: 600;
+      min-width: 80px; color: #6B6B6B;
+    }
+    .bar-track {
+      flex: 1; background: #f0f0ef;
+      border-radius: 6px; height: 28px; overflow: hidden;
+      border: 1px solid #e5e5e5;
+    }
+    .bar-fill {
+      height: 100%; border-radius: 6px;
+      display: flex; align-items: center;
+      padding-left: 10px;
+      font-size: 0.72rem; font-weight: 700;
+      color: #fff;
+      transition: width 0.5s ease;
+    }
+    .bar-fill.recall { background: linear-gradient(90deg, #3a9e65, #2e7d52); }
+    .bar-fill.memory { background: linear-gradient(90deg, #3b6fd4, #2a5cbf); }
+    .bar-val {
+      font-size: 0.78rem; font-weight: 600;
+      min-width: 48px; text-align: right; color: #444;
+    }
+
+    /* Verdict box */
+    .dim-verdict {
+      border-radius: 12px; padding: 16px 20px;
+      font-size: 0.84rem; line-height: 1.6;
+      transition: all 0.3s;
+    }
+    .dim-verdict.good { background: #f4fbf7; border: 1px solid #a8d9bc; color: #1f5c3a; }
+    .dim-verdict.ok   { background: #fffbef; border: 1px solid #f0d88a; color: #7a5c10; }
+    .dim-verdict.bad  { background: #fef7f6; border: 1px solid #f5b8b3; color: #7a2020; }
+    .dim-verdict strong { font-weight: 700; }
+
+    /* When to use table */
+    .when-table-wrap {
+      background: #fff; border: 1px solid #e5e5e5;
+      border-radius: 16px; padding: 28px; margin-bottom: 20px;
+    }
+    .section-title {
+      font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: #9a9a9a; margin-bottom: 16px;
+    }
+    .when-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .when-box {
+      border-radius: 12px; padding: 16px 18px;
+    }
+    .when-box.yes { background: #f4fbf7; border: 1px solid #a8d9bc; }
+    .when-box.no  { background: #fef7f6; border: 1px solid #f5b8b3; }
+    .when-box h4 {
+      font-size: 0.8rem; font-weight: 700; margin-bottom: 10px;
+    }
+    .when-box.yes h4 { color: #2e7d52; }
+    .when-box.no  h4 { color: #c0392b; }
+    .when-box ul { list-style: none; padding: 0; }
+    .when-box ul li {
+      font-size: 0.8rem; color: #444;
+      line-height: 1.5; padding: 3px 0;
+    }
+    .when-box ul li::before { margin-right: 6px; }
+    .when-box.yes ul li::before { content: '✓'; color: #2e7d52; font-weight: 700; }
+    .when-box.no  ul li::before { content: '✗'; color: #c0392b; font-weight: 700; }
+
+    .restart-wrap { text-align: center; padding: 8px 0 16px; }
+    .restart-wrap p { font-size: 0.84rem; color: #9a9a9a; margin-bottom: 16px; }
+
+    @media(max-width: 560px) {
+      .search-row { grid-template-columns: 36px 1fr 16px 1fr 70px 28px; gap: 5px; }
+      .cell { height: 28px; font-size: 0.52rem; }
+      .when-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ══════════ LANDING ══════════ -->
+  <div id="page-landing">
+    <div class="landing">
+      <div class="badge">Vector DB · Interactive Lab</div>
+      <h1>Binary Quantization</h1>
+      <p class="sub">
+        What if you could make vector search <strong>32× smaller</strong><br>
+        without losing meaningful accuracy? That's binary quantization.
+      </p>
+      <p class="sub" style="margin-top: -8px; margin-bottom: 28px;">
+        You will work through <strong>four interactive stages</strong> — encode, search, check recall, then explore how dimension count changes the tradeoff. Plan for about five minutes.
+      </p>
+      <div class="key-idea">
+        💡 <strong>The core idea:</strong> Every number in a vector is either positive or negative.
+        We throw away the exact value and keep only <strong>one bit</strong> — the sign.
+        Then we search using simple bit comparisons instead of heavy floating point math.
+      </div>
+      <div class="journey">
+        <div class="journey-step">
+          <div class="journey-icon orange">🔢</div>
+          <div class="journey-body">
+            <h3>Step 1 — Encode</h3>
+            <p>See how each float number is compressed to a single 0 or 1 based on its sign.</p>
+          </div>
+        </div>
+        <div class="journey-connector"></div>
+        <div class="journey-step">
+          <div class="journey-icon blue">🔍</div>
+          <div class="journey-body">
+            <h3>Step 2 — Search</h3>
+            <p>Watch exact float search and fast binary search run in parallel on the same data.</p>
+          </div>
+        </div>
+        <div class="journey-connector"></div>
+        <div class="journey-step">
+          <div class="journey-icon green">✅</div>
+          <div class="journey-body">
+            <h3>Step 3 — Prove it works</h3>
+            <p>Compare top results. Did binary find the same winners as exact search?</p>
+          </div>
+        </div>
+        <div class="journey-connector"></div>
+        <div class="journey-step">
+          <div class="journey-icon purple">⚖️</div>
+          <div class="journey-body">
+            <h3>Step 4 — The real tradeoff</h3>
+            <p>Binary quantization isn't always the right choice. Learn when it works and when it doesn't.</p>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-large" onclick="startLab()">Start the Lab →</button>
+    </div>
+  </div>
+
+  <!-- ══════════ LAB ══════════ -->
+  <div id="page-lab" style="display:none">
+    <div class="stepper">
+      <div class="step-item active" onclick="goStep(0)"><span class="step-num">①</span>Encode</div>
+      <div class="step-item" onclick="goStep(1)"><span class="step-num">②</span>Search</div>
+      <div class="step-item" onclick="goStep(2)"><span class="step-num">③</span>Prove</div>
+    </div>
+
+    <!-- STEP 0 -->
+    <div id="step-0">
+      <div class="card">
+        <div class="card-label">Step 1 — Compress floats to bits</div>
+        <div class="explain">
+          We have <strong>10 stored vectors</strong> — each with 8 float numbers.
+          The rule is simple: <strong>if the number is ≥ 0, store a 1. If it's &lt; 0, store a 0.</strong>
+          Each 32-bit float becomes 1 bit.
+        </div>
+        <div class="vec-list" id="encodeGrid"></div>
+        <div class="stage-recap"><strong>Recap:</strong> Each float dimension becomes one bit from its sign — that is the entire compression rule.</div>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="backToLanding()">← Back</button>
+        <button class="btn btn-primary" onclick="goStep(1)">Next: Search →</button>
+      </div>
+    </div>
+
+    <!-- STEP 1 -->
+    <div id="step-1" style="display:none">
+      <div class="card">
+        <div class="card-label">Step 2 — Search with a new vector</div>
+        <div class="explain">
+          A new vector comes in. We run <strong>two searches at once</strong>:
+          <br>• 🔵 <strong>Exact search</strong> — compares full float values (slow but precise)
+          <br>• 🟢 <strong>Binary search</strong> — compares just the 0s and 1s (fast, approximate)
+          <br><br>Highlighted rows appear in the <strong>Top 3</strong> of at least one method.
+        </div>
+        <div style="margin-bottom:16px">
+          <button class="btn btn-primary" onclick="newQuery()">⟳ Try a different search</button>
+        </div>
+        <div id="searchGrid"></div>
+        <div class="stage-recap"><strong>Recap:</strong> Cosine similarity uses full floats; Hamming distance counts mismatched bits — a cheap stand-in for similarity.</div>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="goStep(0)">← Back</button>
+        <button class="btn btn-primary" onclick="goStep(2)">Next: Did it work? →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div id="step-2" style="display:none">
+      <div class="card">
+        <div class="card-label">Step 3 — Did binary find the right results?</div>
+        <div class="prove-intro">
+          Below are the <strong>Top 3 results</strong> from exact search.
+          Did the fast binary search also find them?
+        </div>
+        <table class="match-table" id="matchTable"></table>
+        <div id="recallBanner"></div>
+        <div class="stage-recap"><strong>Recap:</strong> Recall@K compares binary’s top picks to exact search — the practical accuracy metric for this shortcut.</div>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
+        <button class="btn btn-primary" onclick="goToEnding()">What does this mean? →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ ENDING ══════════ -->
+  <div id="page-ending" style="display:none">
+    <div class="ending">
+
+      <div class="ending-hero">
+        <div class="badge">Key Takeaway</div>
+        <h2>Binary quantization is a tradeoff</h2>
+        <p>
+          In our lab we used just 8 dimensions — tiny vectors where binary recall can be unpredictable.
+          Real-world embeddings have hundreds or thousands of dimensions, and that changes everything.
+        </p>
+      </div>
+
+      <div class="takeaways">
+        <div class="section-title">Summary — key takeaways</div>
+        <ul>
+          <li>Binary quantization stores one sign bit per dimension instead of a full float, cutting footprint by about 32×.</li>
+          <li>Exact retrieval ranks by cosine (floats); fast binary retrieval ranks by Hamming distance on bit patterns.</li>
+          <li>Recall@K checks whether the binary top-K overlaps the exact top-K — the lab makes that comparison concrete.</li>
+          <li>Higher dimension counts give more sign bits, so recall usually improves while memory savings stay dramatic.</li>
+        </ul>
+      </div>
+
+      <!-- Interactive tradeoff explorer -->
+      <div class="tradeoff-card">
+        <div class="tradeoff-title">Interactive explorer</div>
+        <div class="tradeoff-subtitle">How does dimension count affect the tradeoff?</div>
+
+        <div class="dim-slider-wrap">
+          <div class="dim-slider-label">
+            <span>Drag to change dimensions</span>
+            <strong id="dimDisplay">8 dimensions</strong>
+          </div>
+          <input type="range" id="dimSlider" min="0" max="4" value="0" step="1"
+                 oninput="updateTradeoff()">
+          <div class="dim-ticks">
+            <span>8</span><span>64</span><span>256</span><span>768</span><span>1536</span>
+          </div>
+        </div>
+
+        <div class="bar-group">
+          <div class="bar-row">
+            <span class="bar-label">Recall</span>
+            <div class="bar-track">
+              <div class="bar-fill recall" id="recallBar" style="width:50%">~50%</div>
+            </div>
+            <span class="bar-val" id="recallVal">~50%</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">Memory saved</span>
+            <div class="bar-track">
+              <div class="bar-fill memory" id="memBar" style="width:96.9%">96.9%</div>
+            </div>
+            <span class="bar-val" id="memVal">96.9%</span>
+          </div>
+        </div>
+
+        <div class="dim-verdict" id="dimVerdict"></div>
+      </div>
+
+      <!-- When to use -->
+      <div class="when-table-wrap">
+        <div class="section-title">When to use binary quantization</div>
+        <div class="when-grid">
+          <div class="when-box yes">
+            <h4>✅ Good fit</h4>
+            <ul>
+              <li>Vectors with 512+ dimensions</li>
+              <li>Large indexes (1M+ vectors)</li>
+              <li>Memory is the bottleneck</li>
+              <li>You can tolerate ~5% recall loss</li>
+              <li>OpenAI, Cohere, or similar embeddings</li>
+            </ul>
+          </div>
+          <div class="when-box no">
+            <h4>❌ Poor fit</h4>
+            <ul>
+              <li>Low-dimensional vectors (&lt;128 dims)</li>
+              <li>Small datasets that fit in RAM easily</li>
+              <li>Recall accuracy is critical (medical, legal)</li>
+              <li>Highly sparse vectors</li>
+              <li>Custom fine-tuned tiny embeddings</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="restart-wrap">
+        <p>Want to experiment again with different search vectors?</p>
+        <button class="btn btn-primary btn-large" onclick="restartLab()">↺ Run the lab again</button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const DIMS=8, N=10, K=3;
+  let vecs=[], bins=[], qVec=[], qBin=[], fp32Top=[], binTop=[], curStep=0;
+
+  const rand    = () => parseFloat((Math.random()*2-1).toFixed(3));
+  const toBin   = v  => {
+    /* ===== STUDENT TODO #1 ===== */
+    /* Task: Map each float to 1 if >= 0, else 0 */
+    /* See guide.md for hints */
+    return v.map(() => 0);
+  };
+  const cosine  = (a,b) => {
+    /* ===== STUDENT TODO #2 ===== */
+    /* Task: Return cosine similarity of vectors a and b */
+    /* See guide.md for hints */
+    return 0;
+  };
+  const hamming = (a,b) => {
+    /* ===== STUDENT TODO #3 ===== */
+    /* Task: Return Hamming distance — count positions where bits differ */
+    /* See guide.md for hints */
+    return 0;
+  };
+  const topK    = (sc,k,asc=false) => sc.map((s,i)=>({i,s})).sort((a,b)=>asc?a.s-b.s:b.s-a.s).slice(0,k).map(x=>x.i);
+
+  function fpColor(v){
+    if(v>=0){const t=Math.min(v,1);return `rgb(${Math.round(220-t*50)},${Math.round(230-t*20)},255)`;}
+    const t=Math.min(-v,1);return `rgb(255,${Math.round(220-t*50)},${Math.round(215-t*50)})`;
+  }
+
+  function generate(){
+    vecs=Array.from({length:N},()=>Array.from({length:DIMS},rand));
+    bins=vecs.map(toBin);
+  }
+
+  // ── Page routing ──
+  function show(id){ ['page-landing','page-lab','page-ending'].forEach(p=>{ document.getElementById(p).style.display=p===id?'block':'none'; }); }
+
+  function startLab(){ generate(); renderEncode(); show('page-lab'); }
+  function backToLanding(){ show('page-landing'); }
+  function goToEnding(){ show('page-ending'); updateTradeoff(); }
+  function restartLab(){ generate(); qVec=[]; renderEncode(); goStep(0); show('page-lab'); }
+
+  // ── Steps ──
+  function goStep(s){
+    document.getElementById(`step-${curStep}`).style.display='none';
+    curStep=s;
+    document.getElementById(`step-${s}`).style.display='block';
+    document.querySelectorAll('.step-item').forEach((el,i)=>{
+      el.className='step-item'+(i===s?' active':i<s?' done':'');
+    });
+    if(s===1 && qVec.length===0) newQuery();
+    if(s===2) renderProof();
+  }
+
+  // ── Encode ──
+  function renderEncode(){
+    document.getElementById('encodeGrid').innerHTML = vecs.map((v,i)=>{
+      const b=bins[i];
+      const fp=v.map(x=>`<div class="cell" style="background:${fpColor(x)};border:1px solid #e0e0e0;color:#333">${x.toFixed(2)}</div>`).join('');
+      const bn=b.map(x=>`<div class="cell ${x?'bit-1':'bit-0'}">${x}</div>`).join('');
+      return `<div class="vec-row">
+        <span class="vec-name">V${String(i+1).padStart(2,'0')}</span>
+        <div class="cells">${fp}</div>
+        <span class="arrow">→</span>
+        <div class="cells">${bn}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Search ──
+  function newQuery(){
+    qVec=Array.from({length:DIMS},rand); qBin=toBin(qVec);
+    const cosS=vecs.map(v=>cosine(qVec,v));
+    const hamS=bins.map(b=>hamming(qBin,b));
+    fp32Top=topK(cosS,K,false); binTop=topK(hamS,K,true);
+    const fpSet=new Set(fp32Top), binSet=new Set(binTop);
+
+    const qFP  = qVec.map(x=>`<div class="cell" style="background:${fpColor(x)};border:1px solid #e0e0e0;color:#333">${x.toFixed(2)}</div>`).join('');
+    const qBIN = qBin.map(x=>`<div class="cell ${x?'bit-1':'bit-0'}">${x}</div>`).join('');
+    let html=`<div class="search-row is-query">
+      <span class="vec-name q">Search</span>
+      <div class="cells">${qFP}</div>
+      <span class="arrow">→</span>
+      <div class="cells">${qBIN}</div>
+      <div></div><div></div>
+    </div>`;
+
+    vecs.forEach((v,i)=>{
+      const b=bins[i], isFP=fpSet.has(i), isBin=binSet.has(i);
+      const fp=v.map(x=>`<div class="cell" style="background:${fpColor(x)};border:1px solid #e0e0e0;color:#333">${x.toFixed(2)}</div>`).join('');
+      const bn=b.map(x=>`<div class="cell ${x?'bit-1':'bit-0'}">${x}</div>`).join('');
+      html+=`<div class="search-row ${isFP||isBin?'is-hit':''}">
+        <span class="vec-name">V${String(i+1).padStart(2,'0')}</span>
+        <div class="cells">${fp}</div>
+        <span class="arrow">→</span>
+        <div class="cells">${bn}</div>
+        <div class="score-box">
+          <span class="pill cos">${cosS[i].toFixed(3)}</span>
+          <span class="pill ham">h:${hamS[i]}</span>
+        </div>
+        <div class="dot-col">
+          ${isFP?'<span title="Exact Top-3">🔵</span>':''}
+          ${isBin?'<span title="Binary Top-3">🟢</span>':''}
+        </div>
+      </div>`;
+    });
+    document.getElementById('searchGrid').innerHTML=html;
+  }
+
+  // ── Prove ──
+  function renderProof(){
+    const cosS=vecs.map(v=>cosine(qVec,v));
+    const binSet=new Set(binTop);
+    const rankColors=['#D97706','#888','#3b6fd4'];
+    const rankLabels=['1st','2nd','3rd'];
+    const rows=fp32Top.map((idx,r)=>{
+      const found=binSet.has(idx);
+      return `<tr class="${found?'match-row':'miss-row'}">
+        <td><span class="rank-dot" style="background:${rankColors[r]}18;color:${rankColors[r]}">${rankLabels[r]}</span></td>
+        <td><strong>V${String(idx+1).padStart(2,'0')}</strong></td>
+        <td style="color:#6B6B6B;font-size:0.78rem">Similarity: ${cosS[idx].toFixed(3)}</td>
+        <td><span class="verdict ${found?'yes':'no'}">${found?'✅ Binary found it':'❌ Binary missed it'}</span></td>
+      </tr>`;
+    }).join('');
+    document.getElementById('matchTable').innerHTML=`
+      <thead><tr><th>Rank</th><th>Vector</th><th>Exact Score</th><th>Binary Result</th></tr></thead>
+      <tbody>${rows}</tbody>`;
+    const matches=fp32Top.filter(i=>binSet.has(i)).length;
+    const pct=Math.round(matches/K*100);
+    const good=pct>=60;
+    document.getElementById('recallBanner').innerHTML=`
+      <div class="recall-banner ${good?'good':'bad'}">
+        <div>
+          <div class="recall-num">${pct}%</div>
+          <div class="recall-sub">recall@${K}</div>
+        </div>
+        <div class="recall-desc">
+          <strong>${good?'✅ Binary search found the same results!':'⚠️ Binary missed some results this time.'}</strong><br>
+          ${matches} of ${K} top results matched.
+          ${!good?'This is expected with only 8 dimensions — keep going to learn why.':'This is binary quantization working — fast bits, accurate results.'}
+        </div>
+      </div>`;
+  }
+
+  // ── Ending tradeoff explorer ──
+  const dimSteps = [
+    { dims:8,    recallLow:33, recallHigh:67, recallLabel:'33–67%',  verdict:'bad',
+      text:'<strong>8 dimensions — unreliable.</strong> With so few bits, binary encoding loses too much information. Results are unpredictable. This is why our lab sometimes showed misses.' },
+    { dims:64,   recallLow:70, recallHigh:80, recallLabel:'~75%',    verdict:'ok',
+      text:'<strong>64 dimensions — improving.</strong> More bits means the sign pattern starts capturing meaningful direction. Recall is usable but not production-ready.' },
+    { dims:256,  recallLow:85, recallHigh:90, recallLabel:'~88%',    verdict:'ok',
+      text:'<strong>256 dimensions — getting good.</strong> The law of large numbers kicks in. The sign of 256 values preserves vector direction well. Suitable for many use cases.' },
+    { dims:768,  recallLow:92, recallHigh:95, recallLabel:'~93%',    verdict:'good',
+      text:'<strong>768 dimensions — strong recall.</strong> This is BERT/sentence-transformer territory. Binary quantization works very well here with minimal accuracy loss.' },
+    { dims:1536, recallLow:95, recallHigh:98, recallLabel:'~96%',    verdict:'good',
+      text:'<strong>1536 dimensions — excellent.</strong> OpenAI text-embedding-3-small. At this scale, binary quantization is a <em>no-brainer</em> — 32× smaller, ~96% recall. Used in production by Qdrant, Weaviate, and Pinecone.' },
+  ];
+
+  function updateTradeoff(){
+    /* ===== STUDENT TODO #4 ===== */
+    /* Task: Read dimSlider, pick dimSteps[idx], update recall/memory bars and verdict panel */
+    /* See guide.md for hints */
+  }
+
+  generate();
+  updateTradeoff();
+</script>
+</body>
+</html>
