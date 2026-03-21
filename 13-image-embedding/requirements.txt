@@ -1,0 +1,5 @@
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
+pillow>=10.0.0
+jupyter>=1.0.0
+ipykernel>=6.0.0
