@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vector Search Metrics Lab</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { background-color: #FFFFFF; }
+    body {
+      font-family: 'Styrene A', 'Styrene B', ui-sans-serif, system-ui, -apple-system, sans-serif;
+      background-color: #FFFFFF;
+      color: #191919;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .wrap { max-width: 1040px; margin: 0 auto; }
+    .badge {
+      display: inline-block;
+      background: #FAFAF8;
+      border: 1px solid #FDBA74;
+      color: #D97706;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 12px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .landing { text-align: center; padding: 28px 0 36px; }
+    .landing h1 {
+      font-size: 1.85rem; font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 10px;
+    }
+    .landing .sub { color: #6B6B6B; font-size: 0.95rem; line-height: 1.65; max-width: 560px; margin: 0 auto 28px; }
+    .stage-list {
+      text-align: left;
+      max-width: 440px;
+      margin: 0 auto 32px;
+      padding: 20px 24px;
+      background: #FFFFFF;
+      border: 1px solid #e5e5e5;
+      border-radius: 14px;
+      font-size: 0.88rem;
+      color: #444;
+      line-height: 1.7;
+    }
+    .stage-list strong { color: #191919; }
+    .btn {
+      padding: 11px 24px;
+      border-radius: 10px;
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+    .btn-primary { background: #D97706; color: #fff; }
+    .btn-primary:hover { background: #B45309; }
+    .btn-ghost {
+      background: #FFFFFF;
+      color: #6B6B6B;
+      border: 1px solid #e5e5e5;
+    }
+    .btn-ghost:hover { background: #FAFAF8; }
+
+    #lab { display: none; }
+    .stepper {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 20px;
+      padding: 8px;
+      background: #FFFFFF;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+    }
+    .stepper button {
+      flex: 1;
+      min-width: 88px;
+      padding: 10px 8px;
+      font-size: 0.75rem;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      background: #FFFFFF;
+      color: #6B6B6B;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .stepper button.active {
+      border-color: #D97706;
+      color: #D97706;
+      font-weight: 600;
+      background: #FFFBF5;
+    }
+    .stage-head { margin-bottom: 16px; }
+    .stage-head h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+    .stage-head p { font-size: 0.86rem; color: #6B6B6B; line-height: 1.6; max-width: 720px; }
+    .recap {
+      margin-top: 14px;
+      padding: 12px 16px;
+      background: #FAFAF8;
+      border-left: 3px solid #D97706;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.82rem;
+      color: #444;
+      line-height: 1.55;
+    }
+    .recap strong { color: #191919; }
+
+    .lab-grid {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .lab-grid { grid-template-columns: 1fr; }
+    }
+
+    .plane-card {
+      background: #FFFFFF;
+      border: 1px solid #e5e5e5;
+      border-radius: 16px;
+      padding: 16px;
+      overflow: hidden;
+    }
+    .plane-card h3 {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #9a9a9a;
+      margin-bottom: 10px;
+    }
+    .svg-plane {
+      width: 100%;
+      height: 380px;
+      background: linear-gradient(180deg, #FAFAF8 0%, #FFFFFF 100%);
+      border-radius: 12px;
+      border: 1px solid #eee;
+      cursor: crosshair;
+      touch-action: none;
+    }
+    .hint-drag { font-size: 0.75rem; color: #9a9a9a; margin-top: 8px; }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 14px;
+      padding: 12px 14px;
+      background: #FAFAF8;
+      border-radius: 12px;
+      border: 1px solid #e5e5e5;
+    }
+    .controls label { font-size: 0.78rem; color: #444; display: flex; align-items: center; gap: 6px; }
+    .controls select { font-size: 0.8rem; }
+
+    .side-stack { display: flex; flex-direction: column; gap: 14px; }
+
+    .panel {
+      background: #FFFFFF;
+      border: 1px solid #e5e5e5;
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .panel h3 {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #9a9a9a;
+      margin-bottom: 10px;
+    }
+    .panel .formula {
+      font-family: ui-monospace, monospace;
+      font-size: 0.72rem;
+      color: #444;
+      background: #FAFAF8;
+      padding: 8px 10px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      word-break: break-all;
+    }
+    .explain-live { font-size: 0.84rem; color: #444; line-height: 1.55; }
+    .explain-live strong { color: #D97706; }
+
+    .rank-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    .rank-table th {
+      text-align: left;
+      color: #9a9a9a;
+      font-weight: 600;
+      padding: 6px 4px;
+      border-bottom: 1px solid #eee;
+    }
+    .rank-table td { padding: 8px 4px; border-bottom: 1px solid #f5f5f4; vertical-align: top; }
+    .rank-table tr.top1 { background: #FFFBF5; }
+    .badge-rank {
+      display: inline-block;
+      min-width: 22px;
+      text-align: center;
+      font-weight: 700;
+      color: #D97706;
+    }
+
+    .summary-page { padding: 8px 0 40px; }
+    .summary-page h2 { font-size: 1.35rem; margin-bottom: 16px; }
+    .summary-page ul {
+      list-style: none;
+      padding: 0;
+      max-width: 620px;
+    }
+    .summary-page li {
+      padding: 10px 0 10px 1.2em;
+      text-indent: -1.2em;
+      font-size: 0.9rem;
+      color: #444;
+      line-height: 1.55;
+      border-bottom: 1px solid #f0f0ef;
+    }
+    .summary-page li::before { content: '✓'; color: #D97706; font-weight: 700; margin-right: 8px; }
+
+    .meta-line { font-size: 0.78rem; color: #6B6B6B; margin-top: 8px; }
+    .hidden-stage { display: none !important; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div id="page-landing">
+    <div class="landing">
+      <div class="badge">Vector search · Interactive</div>
+      <h1>Vector Search Metrics Lab</h1>
+      <p class="sub">
+        Drag the <strong>query</strong> (orange). See how <strong>cosine</strong>, <strong>Euclidean distance</strong>, and <strong>dot product</strong>
+        change the <strong>ranked list</strong> — same vectors, different “nearest neighbor.”
+      </p>
+      <div class="stage-list">
+        <p style="margin-bottom:10px;color:#191919;font-weight:600;">Three short parts + summary:</p>
+        <p><strong>1 — Vectors</strong> — Arrows from the origin; length and direction.</p>
+        <p><strong>2 — Metrics</strong> — Compare two documents with one metric at a time.</p>
+        <p><strong>3 — Ranking</strong> — Full list: drag the query and switch metrics; watch the order change.</p>
+      </div>
+      <button type="button" class="btn btn-primary" id="btnStart">Start →</button>
+    </div>
+  </div>
+
+  <div id="lab">
+    <div class="stepper" id="stepper"></div>
+    <div id="labControls" class="controls" style="display:none"></div>
+
+    <div class="stage-panel" data-stage="1">
+      <div class="stage-head">
+        <h2>1 — Vectors from the origin</h2>
+        <p>Each arrow starts at <strong>(0,0)</strong>. The <strong style="color:#D97706">orange</strong> arrow is the <strong>query</strong>; the others stand for “documents.” Drag the query tip — coordinates, length, and angle update.</p>
+      </div>
+      <div class="lab-grid">
+        <div>
+          <div class="plane-card">
+            <h3>Plane</h3>
+            <svg id="svgPlane1" class="svg-plane" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg"></svg>
+            <p class="hint-drag">Drag the <strong>orange</strong> tip. (Dashed grey lines in stages 2–3 show Euclidean distance to each document when that metric is selected.)</p>
+            <p class="meta-line" id="vecMeta1"></p>
+          </div>
+        </div>
+        <div class="side-stack">
+          <div class="panel">
+            <h3>Query</h3>
+            <p class="explain-live">|q| = <strong id="magQ">—</strong> · angle θ = <strong id="angQ">—</strong></p>
+          </div>
+        </div>
+      </div>
+      <p class="recap"><strong>Recap:</strong> A vector is <strong>direction</strong> + <strong>length</strong> — embeddings are the same idea in higher dimensions.</p>
+    </div>
+
+    <div class="stage-panel hidden-stage" data-stage="2">
+      <div class="stage-head">
+        <h2>2 — One metric at a time</h2>
+        <p>Use the bar above: pick <strong>cosine</strong>, <strong>Euclidean</strong>, or <strong>dot product</strong>. Only documents <strong>A</strong> and <strong>B</strong> are shown here — same two arrows, different scores and winner.</p>
+      </div>
+      <div class="lab-grid">
+        <div>
+          <div class="plane-card">
+            <h3>Query + A + B</h3>
+            <svg id="svgPlane2" class="svg-plane" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg"></svg>
+            <p class="meta-line" id="vecMeta2"></p>
+          </div>
+        </div>
+        <div class="side-stack">
+          <div class="panel">
+            <h3>Formula</h3>
+            <div class="formula" id="formulaBox2"></div>
+            <p class="explain-live" id="explainText2"></p>
+          </div>
+          <div class="panel">
+            <h3>A vs B (current metric)</h3>
+            <table class="rank-table" id="abTable"></table>
+          </div>
+        </div>
+      </div>
+      <p class="recap"><strong>Recap:</strong> The metric decides what “closer” means — so <strong>who wins can swap</strong> when you change it.</p>
+    </div>
+
+    <div class="stage-panel hidden-stage" data-stage="3">
+      <div class="stage-head">
+        <h2>3 — Query, metric, ranked results</h2>
+        <p><strong>Drag the query</strong> on the plane, then switch the metric. The table is the retrieval order: row 1 is “nearest” under the rule you picked. That is how vector search behaves: <strong>metric + query</strong> ⇒ <strong>ranked hits</strong>.</p>
+      </div>
+      <div class="lab-grid">
+        <div>
+          <div class="plane-card">
+            <h3>All documents</h3>
+            <svg id="svgPlane3" class="svg-plane" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg"></svg>
+            <p class="meta-line" id="vecMeta3"></p>
+          </div>
+        </div>
+        <div class="side-stack">
+          <div class="panel">
+            <h3>Ranked results (live)</h3>
+            <p class="explain-live" style="font-size:0.78rem;margin-bottom:8px;color:#6B6B6B;">Row 1 = best match for the <strong>orange query</strong> under the selected metric.</p>
+            <table class="rank-table" id="rankFull"></table>
+          </div>
+          <div class="panel">
+            <h3>About #1</h3>
+            <div class="formula" id="formulaBox3"></div>
+            <p class="explain-live" id="explainText3"></p>
+          </div>
+        </div>
+      </div>
+      <p class="recap"><strong>Recap:</strong> Same embedding space — different metrics ⇒ <strong>different top results</strong>. Choosing the metric is part of designing retrieval.</p>
+    </div>
+
+    <div class="stage-panel hidden-stage summary-page" data-stage="4">
+      <div class="badge">Summary</div>
+      <h2>Takeaways</h2>
+      <ul>
+        <li><strong>Cosine</strong> — direction; scale mostly cancels out.</li>
+        <li><strong>Euclidean</strong> — distance between arrow tips in the plane.</li>
+        <li><strong>Dot product</strong> — alignment and vector length together.</li>
+        <li>Your <strong>query</strong> and <strong>metric</strong> together determine the <strong>ranking</strong> — what “nearest” means.</li>
+      </ul>
+      <div style="margin-top:28px;display:flex;gap:12px;flex-wrap:wrap;">
+        <button type="button" class="btn btn-primary" id="btnRestart">Back to stage 1</button>
+        <button type="button" class="btn btn-ghost" id="btnBackLanding">Intro screen</button>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+      <button type="button" class="btn btn-ghost" id="btnPrevStage">← Previous</button>
+      <button type="button" class="btn btn-primary" id="btnNextStage">Next →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const DOC_LABELS = {
+    A: 'Feline behavior',
+    B: 'Dog walking routine',
+    C: 'Stock market trends',
+    D: 'Big cats in the wild',
+    E: 'Pet care tips',
+    F: 'Market analysis report'
+  };
+
+  const DEFAULT_QUERY = [1.2, 0.9];
+  const DEFAULT_DOCS = {
+    A: [2.1, 1.4], B: [0.4, 2.0], C: [-1.1, 0.3], D: [1.8, 0.4], E: [0.9, 1.7], F: [-0.7, -1.0]
+  };
+
+  let state = {
+    stage: 1,
+    query: [...DEFAULT_QUERY],
+    docs: { ...DEFAULT_DOCS },
+    metric: 'cosine',
+    showFormulas: true,
+    dragging: false
+  };
+
+  const STAGE_LABELS = ['1 · Vectors', '2 · Metrics', '3 · Ranking', '4 · Summary'];
+
+  const ox = 400, oy = 200, SCALE = 42;
+
+  function norm(v) {
+    return Math.hypot(v[0], v[1]);
+  }
+  function dot(a, b) {
+    return a[0] * b[0] + a[1] * b[1];
+  }
+  function cosineSimilarity(q, d) {
+    const nq = norm(q), nd = norm(d);
+    if (nq < 1e-12 || nd < 1e-12) return 0;
+    return dot(q, d) / (nq * nd);
+  }
+  function euclideanDistance(q, d) {
+    return Math.hypot(q[0] - d[0], q[1] - d[1]);
+  }
+  function dotProduct(q, d) {
+    return dot(q, d);
+  }
+
+  function vectorsForScore() {
+    return { q: [...state.query], docs: JSON.parse(JSON.stringify(state.docs)) };
+  }
+
+  function scorePair(q, d, metric) {
+    if (metric === 'cosine') return cosineSimilarity(q, d);
+    if (metric === 'euclid') return euclideanDistance(q, d);
+    return dotProduct(q, d);
+  }
+
+  function higherIsBetter(metric) {
+    return metric !== 'euclid';
+  }
+
+  function rankDocuments(q, docs, metric, topK) {
+    const ids = Object.keys(docs);
+    const higher = higherIsBetter(metric);
+    const scored = ids.map(id => ({
+      id,
+      score: scorePair(q, docs[id], metric),
+      label: DOC_LABELS[id]
+    }));
+    scored.sort((a, b) => (higher ? b.score - a.score : a.score - b.score));
+    return typeof topK === 'number' ? scored.slice(0, topK) : scored;
+  }
+
+  function reasonFor(metric, id, rankList) {
+    const first = rankList[0];
+    if (!first) return '';
+    if (metric === 'cosine') {
+      return first.id === id
+        ? 'Best direction match with query.'
+        : 'Lower cosine than #1.';
+    }
+    if (metric === 'euclid') {
+      return first.id === id
+        ? 'Smallest distance from query tip to this tip.'
+        : 'Larger distance than #1.';
+    }
+    return first.id === id
+      ? 'Highest dot product for this query.'
+      : 'Lower dot product than #1.';
+  }
+
+  function explainTop(metric, topId, q, docs) {
+    const d = docs[topId];
+    const cos = cosineSimilarity(q, d);
+    const eu = euclideanDistance(q, d);
+    const dp = dotProduct(q, d);
+    if (metric === 'cosine') {
+      return 'For this <strong>query</strong>, document <strong>' + topId + '</strong> has the highest <strong>cosine similarity</strong> (≈ ' + cos.toFixed(3) + ') — its arrow aligns most with the query direction.';
+    }
+    if (metric === 'euclid') {
+      return 'For this <strong>query</strong>, <strong>' + topId + '</strong> has the <strong>smallest distance</strong> between tips (≈ ' + eu.toFixed(3) + ').';
+    }
+    return 'For this <strong>query</strong>, <strong>' + topId + '</strong> has the highest <strong>dot product</strong> (≈ ' + dp.toFixed(3) + ') — strong alignment and/or length along the query.';
+  }
+
+  function formulaLine(metric) {
+    if (!state.showFormulas) return '(Formulas hidden — turn on “Show formulas.”)';
+    if (metric === 'cosine') return 'cos(θ) = (q·d) / (||q|| ||d||)';
+    if (metric === 'euclid') return '||q − d|| = √((qx−dx)² + (qy−dy)²)';
+    return 'q·d = qx·dx + qy·dy';
+  }
+
+  const COLORS = { q: '#D97706', A: '#2563eb', B: '#16a34a', C: '#9333ea', D: '#dc2626', E: '#0891b2', F: '#ca8a04' };
+
+  function toXY(v) {
+    return [ox + v[0] * SCALE, oy - v[1] * SCALE];
+  }
+
+  function renderPlane(svgEl, options) {
+    const { showEuclidDashed, onlyAB, allDocs } = options;
+    const { q, docs } = vectorsForScore();
+    const metric = state.metric;
+
+    while (svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
+
+    for (let i = -8; i <= 8; i++) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', ox + i * SCALE);
+      line.setAttribute('y1', 20);
+      line.setAttribute('x2', ox + i * SCALE);
+      line.setAttribute('y2', 380);
+      line.setAttribute('stroke', '#eee');
+      svgEl.appendChild(line);
+    }
+    for (let j = -5; j <= 5; j++) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', 40);
+      line.setAttribute('y1', oy - j * SCALE);
+      line.setAttribute('x2', 760);
+      line.setAttribute('y2', oy - j * SCALE);
+      line.setAttribute('stroke', '#eee');
+      svgEl.appendChild(line);
+    }
+
+    const axisX = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    axisX.setAttribute('x1', 40); axisX.setAttribute('y1', oy);
+    axisX.setAttribute('x2', 760); axisX.setAttribute('y2', oy);
+    axisX.setAttribute('stroke', '#ccc'); axisX.setAttribute('stroke-width', '1.5');
+    svgEl.appendChild(axisX);
+    const axisY = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    axisY.setAttribute('x1', ox); axisY.setAttribute('y1', 20);
+    axisY.setAttribute('x2', ox); axisY.setAttribute('y2', 380);
+    axisY.setAttribute('stroke', '#ccc'); axisY.setAttribute('stroke-width', '1.5');
+    svgEl.appendChild(axisY);
+
+    const oDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    oDot.setAttribute('cx', ox); oDot.setAttribute('cy', oy); oDot.setAttribute('r', 4);
+    oDot.setAttribute('fill', '#191919');
+    svgEl.appendChild(oDot);
+
+    const drawArrow = (v, color, label) => {
+      const [x2, y2] = toXY(v);
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', ox); line.setAttribute('y1', oy);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+      line.setAttribute('stroke', color);
+      line.setAttribute('stroke-width', label === 'q' ? 3 : 2.2);
+      svgEl.appendChild(line);
+      const ang = Math.atan2(-(y2 - oy), x2 - ox);
+      const head = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      const hx = x2 - 10 * Math.cos(ang - 0.4);
+      const hy = y2 + 10 * Math.sin(ang - 0.4);
+      head.setAttribute('points', x2 + ',' + y2 + ' ' + hx + ',' + hy + ' ' + (x2 - 10 * Math.cos(ang + 0.4)) + ',' + (y2 + 10 * Math.sin(ang + 0.4)));
+      head.setAttribute('fill', color);
+      svgEl.appendChild(head);
+      const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      t.setAttribute('x', x2 + 6); t.setAttribute('y', y2 - 6);
+      t.setAttribute('font-size', '12'); t.setAttribute('font-weight', '700');
+      t.setAttribute('fill', color);
+      t.textContent = label;
+      svgEl.appendChild(t);
+      return [x2, y2];
+    };
+
+    const qTip = drawArrow(q, COLORS.q, 'q');
+
+    let docIds = Object.keys(docs);
+    if (onlyAB) docIds = ['A', 'B'].filter(k => docs[k]);
+    if (!allDocs) docIds = docIds.slice(0, 4);
+
+    docIds.forEach(id => {
+      if (docs[id]) drawArrow(docs[id], COLORS[id] || '#888', id);
+    });
+
+    if (showEuclidDashed && metric === 'euclid') {
+      docIds.forEach(id => {
+        if (!docs[id]) return;
+        const [tx, ty] = toXY(docs[id]);
+        const dline = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        dline.setAttribute('x1', qTip[0]); dline.setAttribute('y1', qTip[1]);
+        dline.setAttribute('x2', tx); dline.setAttribute('y2', ty);
+        dline.setAttribute('stroke', '#bbb');
+        dline.setAttribute('stroke-width', '1');
+        dline.setAttribute('stroke-dasharray', '4 4');
+        svgEl.appendChild(dline);
+      });
+    }
+  }
+
+  function syncMeta(el, qRaw) {
+    if (!el) return;
+    const mag = norm(qRaw).toFixed(2);
+    const ang = (Math.atan2(qRaw[1], qRaw[0]) * 180 / Math.PI).toFixed(1);
+    el.textContent = 'q = (' + qRaw[0].toFixed(2) + ', ' + qRaw[1].toFixed(2) + ') · |q| = ' + mag + ' · θ = ' + ang + '°';
+    const magQ = document.getElementById('magQ');
+    const angQ = document.getElementById('angQ');
+    if (magQ) magQ.textContent = mag;
+    if (angQ) angQ.textContent = ang + '°';
+  }
+
+  function updateABTable() {
+    const { q, docs } = vectorsForScore();
+    const sub = { A: docs.A, B: docs.B };
+    const tbody = document.getElementById('abTable');
+    if (!tbody) return;
+    const m = state.metric;
+    const rows = ['A', 'B'].map(id => {
+      const sc = scorePair(q, sub[id], m);
+      const display = m === 'euclid' ? sc.toFixed(3) + ' (dist)' : sc.toFixed(3);
+      const winner = rankDocuments(q, sub, m, 2)[0];
+      const mark = winner && winner.id === id ? ' ★' : '';
+      return '<tr><td>' + id + mark + '</td><td>' + display + '</td><td style="font-size:0.72rem;color:#6B6B6B">' + DOC_LABELS[id] + '</td></tr>';
+    });
+    tbody.innerHTML = '<tr><th>Doc</th><th>Score</th><th>Label</th></tr>' + rows.join('');
+  }
+
+  function updateRankTable() {
+    const { q, docs } = vectorsForScore();
+    const list = rankDocuments(q, docs, state.metric);
+    const el = document.getElementById('rankFull');
+    if (!el) return;
+    const rows = list.map((r, i) => {
+      const reason = reasonFor(state.metric, r.id, list);
+      const cls = i === 0 ? 'top1' : '';
+      const sc = state.metric === 'euclid' ? r.score.toFixed(3) + ' dist' : r.score.toFixed(3);
+      return '<tr class="' + cls + '"><td><span class="badge-rank">' + (i + 1) + '</span></td><td><strong>' + r.id + '</strong> · ' + r.label + '</td><td>' + sc + '</td><td style="font-size:0.72rem;color:#6B6B6B">' + reason + '</td></tr>';
+    });
+    el.innerHTML = '<tr><th>#</th><th>Document</th><th>Score</th><th>Note</th></tr>' + rows.join('');
+  }
+
+  function paint() {
+    const qRaw = state.query;
+    syncMeta(document.getElementById('vecMeta1'), qRaw);
+    syncMeta(document.getElementById('vecMeta2'), qRaw);
+    syncMeta(document.getElementById('vecMeta3'), qRaw);
+
+    const s1 = document.getElementById('svgPlane1');
+    const s2 = document.getElementById('svgPlane2');
+    const s3 = document.getElementById('svgPlane3');
+
+    if (s1 && state.stage === 1) renderPlane(s1, { showEuclidDashed: false, onlyAB: false, allDocs: false });
+    if (s2 && state.stage === 2) renderPlane(s2, { showEuclidDashed: true, onlyAB: true, allDocs: true });
+    if (s3 && state.stage === 3) renderPlane(s3, { showEuclidDashed: state.metric === 'euclid', onlyAB: false, allDocs: true });
+
+    const { q, docs } = vectorsForScore();
+    const f2 = document.getElementById('formulaBox2');
+    const e2 = document.getElementById('explainText2');
+    if (f2 && e2 && state.stage === 2) {
+      f2.textContent = formulaLine(state.metric);
+      const r = rankDocuments(q, { A: docs.A, B: docs.B }, state.metric, 2);
+      const top = r[0];
+      e2.innerHTML = top ? explainTop(state.metric, top.id, q, { A: docs.A, B: docs.B }) : '';
+    }
+
+    const f3 = document.getElementById('formulaBox3');
+    const e3 = document.getElementById('explainText3');
+    if (f3 && e3 && state.stage === 3) {
+      f3.textContent = formulaLine(state.metric);
+      const full = rankDocuments(q, docs, state.metric, 1);
+      e3.innerHTML = full.length ? explainTop(state.metric, full[0].id, q, docs) : '';
+    }
+
+    updateABTable();
+    updateRankTable();
+  }
+
+  function clientToVec(svg, clientX, clientY) {
+    const pt = svg.createSVGPoint();
+    pt.x = clientX; pt.y = clientY;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return [0, 0];
+    const p = pt.matrixTransform(ctm.inverse());
+    const x = (p.x - ox) / SCALE;
+    const y = -(p.y - oy) / SCALE;
+    return [x, y];
+  }
+
+  function attachDrag(svg) {
+    if (!svg || svg._dragBound) return;
+    svg._dragBound = true;
+    svg.addEventListener('mousedown', (e) => {
+      const pt = svg.createSVGPoint();
+      pt.x = e.clientX; pt.y = e.clientY;
+      const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+      const { q } = vectorsForScore();
+      const [qx, qy] = toXY(q);
+      if (Math.hypot(p.x - qx, p.y - qy) < 26) {
+        state.dragging = true;
+        state._dragSvg = svg;
+      }
+    });
+    svg.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      const pt = svg.createSVGPoint();
+      pt.x = t.clientX; pt.y = t.clientY;
+      const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+      const { q } = vectorsForScore();
+      const [qx, qy] = toXY(q);
+      if (Math.hypot(p.x - qx, p.y - qy) < 26) {
+        state.dragging = true;
+        state._dragSvg = svg;
+        e.preventDefault();
+      }
+    }, { passive: false });
+  }
+
+  if (!window._vmlDragGlobals) {
+    window._vmlDragGlobals = true;
+    window.addEventListener('mousemove', (e) => {
+      if (!state.dragging || !state._dragSvg) return;
+      const [x, y] = clientToVec(state._dragSvg, e.clientX, e.clientY);
+      state.query = [Math.max(-7, Math.min(7, x)), Math.max(-5, Math.min(5, y))];
+      paint();
+    });
+    window.addEventListener('mouseup', () => { state.dragging = false; state._dragSvg = null; });
+    window.addEventListener('touchmove', (e) => {
+      if (!state.dragging || !state._dragSvg) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      const [x, y] = clientToVec(state._dragSvg, t.clientX, t.clientY);
+      state.query = [Math.max(-7, Math.min(7, x)), Math.max(-5, Math.min(5, y))];
+      paint();
+    }, { passive: false });
+    window.addEventListener('touchend', () => { state.dragging = false; state._dragSvg = null; });
+  }
+
+  function buildControls(container) {
+    container.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'controls';
+    wrap.innerHTML =
+      '<label>Metric <select id="selMetric">' +
+      '<option value="cosine">Cosine similarity</option>' +
+      '<option value="euclid">Euclidean distance</option>' +
+      '<option value="dot">Dot product</option></select></label>' +
+      '<label><input type="checkbox" id="chkForm" checked/> Show formulas</label>';
+    container.appendChild(wrap);
+    document.getElementById('selMetric').value = state.metric;
+    document.getElementById('selMetric').addEventListener('change', e => { state.metric = e.target.value; paint(); });
+    document.getElementById('chkForm').checked = state.showFormulas;
+    document.getElementById('chkForm').addEventListener('change', e => { state.showFormulas = e.target.checked; paint(); });
+  }
+
+  function showStage(n) {
+    state.stage = n;
+    document.querySelectorAll('.stage-panel').forEach(p => {
+      const sn = +p.getAttribute('data-stage');
+      p.classList.toggle('hidden-stage', sn !== n);
+    });
+    document.querySelectorAll('#stepper button').forEach((b, i) => {
+      b.classList.toggle('active', i + 1 === n);
+    });
+
+    const nextBtn = document.getElementById('btnNextStage');
+    const prevBtn = document.getElementById('btnPrevStage');
+    if (nextBtn) nextBtn.style.visibility = n >= 4 ? 'hidden' : 'visible';
+    if (prevBtn) prevBtn.style.visibility = n <= 1 ? 'hidden' : 'visible';
+
+    const ctrlHost = document.getElementById('labControls');
+    if (ctrlHost) {
+      if (n === 2 || n === 3) {
+        ctrlHost.style.display = 'flex';
+        if (!ctrlHost.dataset.built) {
+          buildControls(ctrlHost);
+          ctrlHost.dataset.built = '1';
+        }
+      } else {
+        ctrlHost.style.display = 'none';
+      }
+    }
+
+    if (n === 1) attachDrag(document.getElementById('svgPlane1'));
+    if (n === 2) attachDrag(document.getElementById('svgPlane2'));
+    if (n === 3) attachDrag(document.getElementById('svgPlane3'));
+
+    paint();
+  }
+
+  function buildStepper() {
+    const sp = document.getElementById('stepper');
+    STAGE_LABELS.forEach((label, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.addEventListener('click', () => showStage(i + 1));
+      sp.appendChild(b);
+    });
+  }
+
+  document.getElementById('btnStart').addEventListener('click', () => {
+    document.getElementById('page-landing').style.display = 'none';
+    document.getElementById('lab').style.display = 'block';
+    showStage(1);
+  });
+
+  document.getElementById('btnNextStage').addEventListener('click', () => {
+    if (state.stage < 4) showStage(state.stage + 1);
+  });
+  document.getElementById('btnPrevStage').addEventListener('click', () => {
+    if (state.stage > 1) showStage(state.stage - 1);
+  });
+  document.getElementById('btnRestart').addEventListener('click', () => {
+    state.query = [...DEFAULT_QUERY];
+    state.docs = { ...DEFAULT_DOCS };
+    showStage(1);
+  });
+  document.getElementById('btnBackLanding').addEventListener('click', () => {
+    document.getElementById('lab').style.display = 'none';
+    document.getElementById('page-landing').style.display = 'block';
+  });
+
+  buildStepper();
+  document.getElementById('lab').style.display = 'none';
+})();
+</script>
+</body>
+</html>
