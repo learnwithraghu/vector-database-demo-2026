@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vector Database Mastery: The Ultimate Quiz Challenge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 60px 20px;
+            position: relative;
+        }
+
+        .hero h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+            max-width: 700px;
+            margin: 0 auto 40px;
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+
+        .start-btn {
+            display: inline-block;
+            padding: 18px 50px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+            animation: fadeInUp 1s ease-out 0.4s both;
+            cursor: pointer;
+            border: none;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 212, 255, 0.4);
+        }
+
+        .game-container {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .game-container.visible {
+            display: block;
+            opacity: 1;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-item .label {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .score-item .value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #00d4ff;
+        }
+
+        .progress-bar {
+            flex: 1;
+            margin: 0 30px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            transition: width 0.5s ease-out;
+        }
+
+        .question-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.5s ease-out;
+        }
+
+        .question-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .question-number {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.2rem;
+            color: #7b2cbf;
+            margin-bottom: 20px;
+        }
+
+        .question-text {
+            font-size: 1.4rem;
+            font-weight: 500;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .option-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px 20px;
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: #00d4ff;
+            transform: translateY(-2px);
+        }
+
+        .option-btn.correct {
+            background: rgba(107, 203, 119, 0.2);
+            border-color: #6bcb77;
+        }
+
+        .option-btn.wrong {
+            background: rgba(255, 107, 107, 0.2);
+            border-color: #ff6b6b;
+        }
+
+        .option-btn:disabled {
+            cursor: default;
+        }
+
+        .option-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 10px;
+            font-weight: 600;
+        }
+
+        .feedback {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 12px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease-out;
+        }
+
+        .feedback.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .feedback.correct {
+            background: rgba(107, 203, 119, 0.2);
+            border: 1px solid #6bcb77;
+        }
+
+        .feedback.wrong {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid #ff6b6b;
+        }
+
+        .feedback-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .feedback-text {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+        }
+
+        .next-btn {
+            display: none;
+            margin-top: 30px;
+            padding: 15px 40px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .next-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+
+        .next-btn.visible {
+            display: block;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .results-container {
+            display: none;
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .results-container.visible {
+            display: block;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .results-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .results-score {
+            font-size: 4rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 30px;
+        }
+
+        .results-message {
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 40px;
+        }
+
+        .badge-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .badge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            min-width: 120px;
+        }
+
+        .badge-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .badge-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .badge-desc {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .badge.unlocked {
+            background: rgba(107, 203, 119, 0.2);
+            border: 1px solid #6bcb77;
+        }
+
+        .badge.locked {
+            opacity: 0.5;
+            filter: grayscale(1);
+        }
+
+        .restart-btn {
+            padding: 18px 50px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .restart-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 212, 255, 0.4);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+
+        @keyframes floating {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .star {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.1);
+            font-size: 2rem;
+            animation: twinkle 3s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.1; }
+            50% { opacity: 0.3; }
+        }
+
+        .combo-display {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(90deg, #7b2cbf, #00d4ff);
+            padding: 15px 25px;
+            border-radius: 50px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.2rem;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.3s ease-out;
+        }
+
+        .combo-display.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .timer {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .timer-icon {
+            font-size: 1.5rem;
+        }
+
+        .timer-value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #00d4ff;
+        }
+
+        .streak-fire {
+            color: #ff6b6b;
+            animation: firePulse 1s ease-in-out infinite;
+        }
+
+        @keyframes firePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .xp-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .xp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            transition: width 0.5s ease-out;
+        }
+
+        .xp-text {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero" id="hero">
+            <div class="stars"></div>
+            <h1>🚀 Vector Database Mastery</h1>
+            <p>Test your knowledge of vector databases, embeddings, and similarity search!</p>
+            <button class="start-btn" onclick="startQuiz()">Start Quiz</button>
+        </div>
+
+        <div class="combo-display" id="comboDisplay">
+            🔥 <span id="comboValue">0</span>x Combo
+        </div>
+
+        <div class="game-container" id="gameContainer">
+            <div class="score-board">
+                <div class="score-item">
+                    <div class="label">Score</div>
+                    <div class="value" id="score">0</div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+                <div class="score-item">
+                    <div class="label">Progress</div>
+                    <div class="value" id="progress">0/10</div>
+                </div>
+            </div>
+
+            <div class="question-card" id="questionCard">
+                <div class="question-number">Question <span id="questionNumber">1</span></div>
+                <div class="question-text" id="questionText">Loading question...</div>
+                <div class="options-grid" id="optionsGrid">
+                    <!-- Options will be inserted here -->
+                </div>
+                <div class="feedback" id="feedback">
+                    <div class="feedback-title" id="feedbackTitle"></div>
+                    <div class="feedback-text" id="feedbackText"></div>
+                </div>
+                <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Next Question</button>
+            </div>
+        </div>
+
+        <div class="results-container" id="resultsContainer">
+            <h2 class="results-title">Quiz Complete!</h2>
+            <div class="results-score" id="finalScore">0/100</div>
+            <p class="results-message" id="resultsMessage"></p>
+            <div class="badge-container" id="badgeContainer">
+                <!-- Badges will be inserted here -->
+            </div>
+            <button class="restart-btn" onclick="restartQuiz()">Try Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Quiz data
+        const quizData = [
+            {
+                question: "What is the primary purpose of a vector database?",
+                options: [
+                    "To store and retrieve structured data like SQL databases",
+                    "To store and search high-dimensional vectors for similarity-based queries",
+                    "To create and manage machine learning models",
+                    "To handle real-time streaming data"
+                ],
+                correct: 1,
+                explanation: "Vector databases are specifically designed to store and search high-dimensional vectors, enabling similarity-based queries that power applications like recommendation systems, image search, and semantic search."
+            },
+            {
+                question: "What is an embedding in the context of vector databases?",
+                options: [
+                    "A type of SQL query",
+                    "A numerical representation of data that captures semantic meaning",
+                    "A database backup file",
+                    "A machine learning algorithm"
+                ],
+                correct: 1,
+                explanation: "Embeddings are numerical representations of data (text, images, audio) that capture semantic meaning, allowing vector databases to understand and compare data based on similarity rather than exact matches."
+            },
+            {
+                question: "What metric is commonly used to measure similarity between vectors?",
+                options: [
+                    "Addition",
+                    "Euclidean distance (L2)",
+                    "Multiplication",
+                    "Subtraction"
+                ],
+                correct: 1,
+                explanation: "Euclidean distance (L2) is commonly used to measure the straight-line distance between vectors in high-dimensional space, where smaller distances indicate greater similarity."
+            },
+            {
+                question: "What is the primary advantage of using approximate nearest neighbor (ANN) search?",
+                options: [
+                    "It guarantees exact results every time",
+                    "It's faster and more memory-efficient than exact search",
+                    "It requires less storage space",
+                    "It's easier to implement than exact search"
+                ],
+                correct: 1,
+                explanation: "ANN search provides significantly faster and more memory-efficient results by sacrificing a small amount of accuracy for much better performance, which is acceptable for many applications."
+            },
+            {
+                question: "What does HNSW stand for?",
+                options: [
+                    "Hierarchical Navigable Small World Graph",
+                    "High-Speed Neural Search Web",
+                    "Hyper-Network Spatial Wrapper",
+                    "Hierarchical Node Search Window"
+                ],
+                correct: 0,
+                explanation: "HNSW stands for Hierarchical Navigable Small World Graph, a popular algorithm for approximate nearest neighbor search that uses a multi-layer graph structure to efficiently navigate vector space."
+            },
+            {
+                question: "What is the difference between exact search and approximate search?",
+                options: [
+                    "No difference, they produce the same results",
+                    "Exact search guarantees the true nearest neighbors, while approximate search trades some accuracy for speed",
+                    "Exact search is faster, approximate search is slower",
+                    "Exact search only works with structured data"
+                ],
+                correct: 1,
+                explanation: "Exact search guarantees finding the true nearest neighbors but can be very slow and memory-intensive for large datasets. Approximate search sacrifices some accuracy for much better performance."
+            },
+            {
+                question: "What is dimensionality in vector databases?",
+                options: [
+                    "The number of questions in a quiz",
+                    "The number of dimensions (features) in each vector",
+                    "The number of database tables",
+                    "The number of users in the system"
+                ],
+                correct: 1,
+                explanation: "Dimensionality refers to the number of features or dimensions in each vector. Higher dimensions can capture more information but also increase computational complexity."
+            },
+            {
+                question: "What is a common use case for vector databases?",
+                options: [
+                    "E-commerce product catalog management",
+                    "Social media feed sorting",
+                    "Semantic search and recommendation systems",
+                    "Traditional SQL data analysis"
+                ],
+                correct: 2,
+                explanation: "Vector databases excel at semantic search, recommendation systems, and applications that need to find similar items based on their vector representations, not exact matches."
+            },
+            {
+                question: "What is the role of the 'ef' parameter in HNSW?",
+                options: [
+                    "Controls the number of dimensions in vectors",
+                    "Controls the search speed vs accuracy trade-off",
+                    "Determines the number of layers in the graph",
+                    "Sets the maximum number of connections per node"
+                ],
+                correct: 1,
+                explanation: "The 'ef' parameter in HNSW controls the search speed vs accuracy trade-off - higher values provide better accuracy but slower search, while lower values are faster but less accurate."
+            },
+            {
+                question: "What is the difference between L2 distance and cosine similarity?",
+                options: [
+                    "They measure the same thing",
+                    "L2 distance measures absolute difference, cosine similarity measures angular difference",
+                    "Cosine similarity is always larger than L2 distance",
+                    "L2 distance only works with text data"
+                ],
+                correct: 1,
+                explanation: "L2 distance measures the straight-line distance between vectors (magnitude), while cosine similarity measures the angle between vectors (direction), making cosine similarity better for comparing semantic similarity regardless of magnitude."
+            }
+        ];
+
+        // Game state
+        let currentQuestion = 0;
+        let score = 0;
+        let combo = 0;
+        let maxCombo = 0;
+        let correctAnswers = 0;
+        let isAnswering = false;
+        let timer = null;
+        let timeLeft = 30;
+
+        // DOM elements
+        const hero = document.getElementById('hero');
+        const gameContainer = document.getElementById('gameContainer');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const scoreEl = document.getElementById('score');
+        const progressFill = document.getElementById('progressFill');
+        const progressEl = document.getElementById('progress');
+        const questionNumber = document.getElementById('questionNumber');
+        const questionText = document.getElementById('questionText');
+        const optionsGrid = document.getElementById('optionsGrid');
+        const feedback = document.getElementById('feedback');
+        const feedbackTitle = document.getElementById('feedbackTitle');
+        const feedbackText = document.getElementById('feedbackText');
+        const nextBtn = document.getElementById('nextBtn');
+        const comboDisplay = document.getElementById('comboDisplay');
+        const comboValue = document.getElementById('comboValue');
+        const finalScore = document.getElementById('finalScore');
+        const resultsMessage = document.getElementById('resultsMessage');
+        const badgeContainer = document.getElementById('badgeContainer');
+
+        // Start quiz
+        function startQuiz() {
+            hero.style.display = 'none';
+            gameContainer.classList.add('visible');
+            currentQuestion = 0;
+            score = 0;
+            combo = 0;
+            maxCombo = 0;
+            correctAnswers = 0;
+            showQuestion();
+        }
+
+        // Show question
+        function showQuestion() {
+            const question = quizData[currentQuestion];
+            questionNumber.textContent = currentQuestion + 1;
+            questionText.textContent = question.question;
+            
+            optionsGrid.innerHTML = '';
+            feedback.classList.remove('visible');
+            nextBtn.classList.remove('visible');
+            isAnswering = true;
+            timeLeft = 30;
+
+            question.options.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerHTML = `<span class="option-number">${index + 1}</span>${option}`;
+                btn.onclick = () => selectAnswer(index);
+                optionsGrid.appendChild(btn);
+            });
+
+            // Start timer
+            startTimer();
+
+            // Update progress
+            updateProgress();
+        }
+
+        // Start timer
+        function startTimer() {
+            if (timer) clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    selectAnswer(-1); // Time's up
+                }
+            }, 1000);
+        }
+
+        // Select answer
+        function selectAnswer(selected) {
+            if (!isAnswering) return;
+            isAnswering = false;
+            clearInterval(timer);
+
+            const question = quizData[currentQuestion];
+            const options = document.querySelectorAll('.option-btn');
+            const correct = question.correct;
+
+            // Disable all options
+            options.forEach((opt, index) => {
+                opt.disabled = true;
+                if (index === correct) {
+                    opt.classList.add('correct');
+                } else if (index === selected && selected !== correct) {
+                    opt.classList.add('wrong');
+                }
+            });
+
+            // Calculate score
+            const basePoints = 10;
+            const timeBonus = Math.floor(timeLeft / 3);
+            let earnedPoints = basePoints + timeBonus;
+
+            if (selected === correct) {
+                combo++;
+                maxCombo = Math.max(maxCombo, combo);
+                correctAnswers++;
+                earnedPoints += combo * 2;
+                
+                feedbackTitle.textContent = '✅ Correct!';
+                feedbackTitle.style.color = '#6bcb77';
+                feedback.className = 'feedback correct visible';
+                
+                // Combo display
+                comboDisplay.classList.add('visible');
+                comboValue.textContent = combo;
+            } else {
+                combo = 0;
+                feedbackTitle.textContent = selected === -1 ? '⏰ Time\'s Up!' : '❌ Incorrect';
+                feedbackTitle.style.color = '#ff6b6b';
+                feedback.className = 'feedback wrong visible';
+            }
+
+            score += earnedPoints;
+            scoreEl.textContent = score;
+            feedbackText.textContent = question.explanation + ` +${timeBonus} time bonus${combo > 0 ? ` +${combo * 2} combo bonus` : ''}`;
+            nextBtn.classList.add('visible');
+
+            updateProgress();
+        }
+
+        // Update progress
+        function updateProgress() {
+            const progress = (currentQuestion + 1) / quizData.length * 100;
+            progressFill.style.width = progress + '%';
+            progressEl.textContent = `${currentQuestion + 1}/${quizData.length}`;
+        }
+
+        // Next question
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion < quizData.length) {
+                showQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        // Show results
+        function showResults() {
+            gameContainer.classList.remove('visible');
+            resultsContainer.classList.add('visible');
+            
+            const percentage = (correctAnswers / quizData.length) * 100;
+            finalScore.textContent = `${correctAnswers}/${quizData.length}`;
+            
+            let message = '';
+            if (percentage >= 90) {
+                message = '🌟 Outstanding! You\'re a Vector Database Master!';
+            } else if (percentage >= 70) {
+                message = '🎯 Great job! You have solid knowledge of vector databases!';
+            } else if (percentage >= 50) {
+                message = '📚 Good effort! Keep learning to become an expert!';
+            } else {
+                message = '💪 Keep practicing! Vector databases are powerful tools!';
+            }
+            resultsMessage.textContent = message;
+
+            // Generate badges
+            generateBadges(percentage, maxCombo);
+        }
+
+        // Generate badges
+        function generateBadges(percentage, combo) {
+            badgeContainer.innerHTML = '';
+            
+            const badges = [
+                { icon: '🥇', title: 'Perfect Score', desc: '100% correct', unlocked: percentage === 100 },
+                { icon: '🔥', title: 'Combo Master', desc: `${maxCombo}x combo`, unlocked: maxCombo >= 5 },
+                { icon: '⚡', title: 'Speed Demon', desc: 'Under 10s per question', unlocked: timeLeft > 20 },
+                { icon: '🎯', title: 'Precision Pro', desc: '70%+ accuracy', unlocked: percentage >= 70 },
+                { icon: '📚', title: 'Bookworm', desc: '10 questions', unlocked: true },
+                { icon: '🚀', title: 'Rocket Scientist', desc: 'All questions answered', unlocked: true }
+            ];
+
+            badges.forEach(badge => {
+                const badgeEl = document.createElement('div');
+                badgeEl.className = `badge ${badge.unlocked ? 'unlocked' : 'locked'}`;
+                badgeEl.innerHTML = `
+                    <div class="badge-icon">${badge.unlocked ? badge.icon : '🔒'}</div>
+                    <div class="badge-title">${badge.title}</div>
+                    <div class="badge-desc">${badge.desc}</div>
+                `;
+                badgeContainer.appendChild(badgeEl);
+            });
+        }
+
+        // Restart quiz
+        function restartQuiz() {
+            resultsContainer.classList.remove('visible');
+            hero.style.display = 'block';
+            hero.classList.add('visible');
+        }
+
+        // Create stars background
+        function createStars() {
+            const starsContainer = document.querySelector('.stars');
+            for (let i = 0; i < 50; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.textContent = '✦';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                starsContainer.appendChild(star);
+            }
+        }
+
+        // Initialize
+        createStars();
+    </script>
+</body>
+</html>
