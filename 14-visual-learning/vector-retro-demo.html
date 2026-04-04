@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VectorDB Retro Interactive Demo</title>
+  <style>
+    body {
+      background: #f4ecd8;
+      color: #2d2d2d;
+      font-family: 'Courier New', Courier, monospace;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .container {
+      background: #fffbe6;
+      border: 4px solid #bfae8e;
+      border-radius: 18px;
+      box-shadow: 0 8px 32px #bfae8e44;
+      padding: 32px 40px;
+      width: 480px;
+      max-width: 90vw;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    h1, h2 {
+      font-family: 'Press Start 2P', 'Courier New', Courier, monospace;
+      color: #bfae8e;
+      margin: 0 0 18px 0;
+      letter-spacing: 2px;
+      text-shadow: 1px 1px 0 #fffbe6, 2px 2px 0 #bfae8e44;
+    }
+    .stage {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 320px;
+      text-align: center;
+    }
+    .stage.active {
+      display: flex;
+      animation: fadeIn 0.7s;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .retro-btn {
+      background: #bfae8e;
+      color: #fffbe6;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Press Start 2P', 'Courier New', Courier, monospace;
+      font-size: 1rem;
+      padding: 12px 32px;
+      margin-top: 32px;
+      cursor: pointer;
+      box-shadow: 0 2px 0 #8c7a5a;
+      transition: background 0.2s;
+    }
+    .retro-btn:hover {
+      background: #8c7a5a;
+    }
+    .vector-demo {
+      margin: 18px 0 0 0;
+      width: 320px;
+      height: 180px;
+      background: #e6d7b6;
+      border: 2px dashed #bfae8e;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .vector-point {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #ff7f50;
+      border: 2px solid #2d2d2d;
+      position: absolute;
+      transition: all 0.5s cubic-bezier(.7,1.7,.6,.9);
+      font-size: 0.8rem;
+      color: #fffbe6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Press Start 2P', 'Courier New', Courier, monospace;
+    }
+    .query-point {
+      background: #2d2d2d;
+      border: 2px solid #ff7f50;
+      color: #ff7f50;
+      z-index: 2;
+    }
+    .result-point {
+      background: #bfae8e;
+      border: 2px solid #ff7f50;
+      color: #2d2d2d;
+      z-index: 2;
+    }
+    .legend {
+      margin-top: 12px;
+      font-size: 0.95rem;
+      color: #8c7a5a;
+      display: flex;
+      gap: 18px;
+      justify-content: center;
+    }
+    .legend span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      display: inline-block;
+      border: 2px solid #2d2d2d;
+    }
+    .dot-data { background: #ff7f50; }
+    .dot-query { background: #2d2d2d; border-color: #ff7f50; }
+    .dot-result { background: #bfae8e; border-color: #ff7f50; }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <!-- Stage 1: Intro -->
+    <div class="stage active" id="stage-1">
+      <h1>VectorDB Power!</h1>
+      <p>Welcome! Today you'll see how Vector Databases make searching smarter.<br>Let's explore with retro style and interactive visuals.<br><br><strong>Ready?</strong></p>
+      <button class="retro-btn" onclick="nextStage()">Start</button>
+    </div>
+    <!-- Stage 2: What is a Vector? -->
+    <div class="stage" id="stage-2">
+      <h2>What is a Vector?</h2>
+      <div class="vector-demo" id="vector-demo-1"></div>
+      <p>A vector is just a list of numbers—like coordinates on a map.<br>We use them to represent data in a way computers understand.</p>
+      <div class="legend">
+        <span><span class="legend-dot dot-data"></span>Data Point</span>
+      </div>
+      <div style="margin-top:12px;color:#8c7a5a;">A vector is a point in space.</div>
+      <button class="retro-btn" onclick="nextStage()">Next</button>
+    </div>
+    <!-- Stage 3: Storing Data as Vectors -->
+    <div class="stage" id="stage-3">
+      <h2>Storing Data as Vectors</h2>
+      <div class="vector-demo" id="vector-demo-2"></div>
+      <p>VectorDB stores lots of data points as vectors.<br>Each point is a document, image, or text turned into numbers.</p>
+      <div class="legend">
+        <span><span class="legend-dot dot-data"></span>Data Point</span>
+      </div>
+      <div style="margin-top:12px;color:#8c7a5a;">All data is mapped to vectors.</div>
+      <button class="retro-btn" onclick="nextStage()">Next</button>
+    </div>
+    <!-- Stage 4: Searching with Vectors -->
+    <div class="stage" id="stage-4">
+      <h2>Searching with Vectors</h2>
+      <div class="vector-demo" id="vector-demo-3"></div>
+      <p>When you search, your query is also a vector.<br>VectorDB finds the closest points—these are the most similar results!</p>
+      <div class="legend">
+        <span><span class="legend-dot dot-data"></span>Data Point</span>
+        <span><span class="legend-dot dot-query"></span>Query</span>
+        <span><span class="legend-dot dot-result"></span>Top Match</span>
+      </div>
+      <div style="margin-top:12px;color:#8c7a5a;">VectorDB finds the nearest neighbors.</div>
+      <button class="retro-btn" onclick="nextStage()">Next</button>
+    </div>
+    <!-- Stage 5: Why is this Powerful? -->
+    <div class="stage" id="stage-5">
+      <h2>Why is this Powerful?</h2>
+      <div class="vector-demo" id="vector-demo-4"></div>
+      <p>VectorDB can search by meaning, not just keywords.<br>It powers AI, recommendations, and more!</p>
+      <div style="margin-top:12px;color:#8c7a5a;">Smarter search for the future.</div>
+      <button class="retro-btn" onclick="nextStage()">Summary</button>
+    </div>
+    <!-- Stage 6: Summary -->
+    <div class="stage" id="stage-6">
+      <h2>Recap: VectorDB Power</h2>
+      <ul style="text-align:left;font-size:1.1rem;line-height:1.7;color:#2d2d2d;margin:0 0 18px 0;padding:0 0 0 18px;">
+        <li>Vectors turn data into numbers computers can compare</li>
+        <li>VectorDB stores and searches these vectors efficiently</li>
+        <li>Searches find the most similar data—even by meaning</li>
+        <li>This powers AI, recommendations, and smarter apps</li>
+      </ul>
+      <div style="color:#bfae8e;font-family:'Press Start 2P',monospace;font-size:1.1rem;margin-bottom:18px;">You now know the magic behind VectorDB!</div>
+      <button class="retro-btn" onclick="restart()">Restart</button>
+    </div>
+  </div>
+  <script>
+    // Stage navigation
+    let stage = 1;
+    function showStage(n) {
+      for (let i = 1; i <= 6; i++) {
+        document.getElementById('stage-' + i).classList.remove('active');
+      }
+      document.getElementById('stage-' + n).classList.add('active');
+      stage = n;
+      if (n === 2) drawVector1();
+      if (n === 3) drawVector2();
+      if (n === 4) drawVector3();
+      if (n === 5) drawVector4();
+    }
+    function nextStage() {
+      if (stage < 6) showStage(stage + 1);
+    }
+    function restart() {
+      showStage(1);
+    }
+    // Stage 2: Show a single vector
+    function drawVector1() {
+      const box = document.getElementById('vector-demo-1');
+      box.innerHTML = '';
+      const pt = document.createElement('div');
+      pt.className = 'vector-point';
+      pt.style.left = '60%';
+      pt.style.top = '40%';
+      pt.textContent = 'A';
+      box.appendChild(pt);
+    }
+    // Stage 3: Show multiple data points
+    function drawVector2() {
+      const box = document.getElementById('vector-demo-2');
+      box.innerHTML = '';
+      const points = [
+        {x: 20, y: 40, label: 'A'},
+        {x: 60, y: 30, label: 'B'},
+        {x: 80, y: 70, label: 'C'},
+        {x: 35, y: 80, label: 'D'},
+        {x: 70, y: 55, label: 'E'}
+      ];
+      for (const pt of points) {
+        const el = document.createElement('div');
+        el.className = 'vector-point';
+        el.style.left = pt.x + '%';
+        el.style.top = pt.y + '%';
+        el.textContent = pt.label;
+        box.appendChild(el);
+      }
+    }
+    // Stage 4: Show query and nearest neighbor
+    function drawVector3() {
+      const box = document.getElementById('vector-demo-3');
+      box.innerHTML = '';
+      const points = [
+        {x: 20, y: 40, label: 'A'},
+        {x: 60, y: 30, label: 'B'},
+        {x: 80, y: 70, label: 'C'},
+        {x: 35, y: 80, label: 'D'},
+        {x: 70, y: 55, label: 'E'}
+      ];
+      for (const pt of points) {
+        const el = document.createElement('div');
+        el.className = 'vector-point';
+        el.style.left = pt.x + '%';
+        el.style.top = pt.y + '%';
+        el.textContent = pt.label;
+        box.appendChild(el);
+      }
+      // Query point
+      const query = document.createElement('div');
+      query.className = 'vector-point query-point';
+      query.style.left = '65%';
+      query.style.top = '40%';
+      query.textContent = '?';
+      box.appendChild(query);
+      // Highlight nearest neighbor (B)
+      const result = document.createElement('div');
+      result.className = 'vector-point result-point';
+      result.style.left = '60%';
+      result.style.top = '30%';
+      result.textContent = 'B';
+      box.appendChild(result);
+    }
+    // Stage 5: Show meaning-based search
+    function drawVector4() {
+      const box = document.getElementById('vector-demo-4');
+      box.innerHTML = '';
+      // Data points
+      const points = [
+        {x: 20, y: 40, label: 'Dog'},
+        {x: 60, y: 30, label: 'Cat'},
+        {x: 80, y: 70, label: 'Car'},
+        {x: 35, y: 80, label: 'Tree'},
+        {x: 70, y: 55, label: 'Bike'}
+      ];
+      for (const pt of points) {
+        const el = document.createElement('div');
+        el.className = 'vector-point';
+        el.style.left = pt.x + '%';
+        el.style.top = pt.y + '%';
+        el.textContent = pt.label;
+        box.appendChild(el);
+      }
+      // Query: "puppy"
+      const query = document.createElement('div');
+      query.className = 'vector-point query-point';
+      query.style.left = '25%';
+      query.style.top = '45%';
+      query.textContent = 'puppy';
+      query.style.fontSize = '0.7rem';
+      box.appendChild(query);
+      // Highlight nearest neighbor (Dog)
+      const result = document.createElement('div');
+      result.className = 'vector-point result-point';
+      result.style.left = '20%';
+      result.style.top = '40%';
+      result.textContent = 'Dog';
+      result.style.fontSize = '0.7rem';
+      box.appendChild(result);
+    }
+    // Initial draw
+    window.onload = () => { drawVector1(); };
+  </script>
+</body>
+</html>
