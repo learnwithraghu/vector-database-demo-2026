@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quantization in VectorDB — Interactive Visual Lesson</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { background-color: #FFFFFF; }
+    body {
+      font-family: 'Styrene A', 'Styrene B', ui-sans-serif, system-ui, -apple-system, sans-serif;
+      background-color: #FFFFFF;
+      color: #191919;
+      min-height: 100vh;
+      padding: 24px 24px;
+    }
+    .container { max-width: 820px; margin: 0 auto; }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-block;
+      background: #FFF7ED;
+      border: 1px solid #FDBA74;
+      color: #D97706;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 12px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── Stepper ── */
+    .stepper {
+      display: flex;
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+    .step-item {
+      flex: 1;
+      padding: 10px 6px;
+      text-align: center;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: #9a9a9a;
+      cursor: pointer;
+      border-right: 1px solid #e5e5e5;
+      transition: all 0.15s;
+      background: #fff;
+    }
+    .step-item:last-child { border-right: none; }
+    .step-item.active {
+      color: #D97706; background: #FFFBF5;
+      font-weight: 600; border-bottom: 2px solid #D97706;
+    }
+    .step-item.done { color: #3a9e65; background: #f4fbf7; }
+    .step-num { display: block; font-size: 0.9rem; margin-bottom: 2px; }
+
+    /* ── Card ── */
+    .card {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+    .card-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: #9a9a9a;
+      margin-bottom: 16px;
+    }
+
+    /* ── Explain ── */
+    .explain {
+      background: #FFFFFF;
+      border-left: 3px solid #D97706;
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+      font-size: 0.84rem;
+      color: #444;
+      line-height: 1.65;
+      margin-bottom: 20px;
+    }
+    .explain strong { color: #191919; }
+
+    /* ── Buttons ── */
+    .btn {
+      padding: 9px 18px;
+      border-radius: 9px;
+      border: none;
+      font-size: 0.84rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .btn-primary { background: #D97706; color: #fff; }
+    .btn-primary:hover { background: #B45309; }
+    .btn-ghost { background: #fff; color: #6B6B6B; border: 1px solid #e5e5e5; }
+    .btn-ghost:hover { background: #FAFAF8; }
+    .btn-large { padding: 13px 32px; font-size: 0.95rem; border-radius: 12px; }
+    .btn-sm { padding: 6px 14px; font-size: 0.78rem; }
+
+    .nav { display: flex; justify-content: space-between; margin-top: 4px; }
+
+    /* ── Landing ── */
+    .landing { text-align: center; padding: 20px 0 32px; }
+    .landing h1 {
+      font-size: 1.9rem; font-weight: 700;
+      letter-spacing: -0.03em; color: #191919;
+      margin-bottom: 10px;
+    }
+    .landing .sub {
+      color: #6B6B6B; font-size: 0.95rem;
+      margin-bottom: 36px; line-height: 1.6;
+    }
+    .key-idea {
+      background: #FFFFFF;
+      border: 1px solid #FDBA74;
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-size: 0.84rem;
+      color: #6B6B6B;
+      line-height: 1.6;
+      margin-bottom: 32px;
+      text-align: left;
+    }
+    .key-idea strong { color: #D97706; }
+    .journey { display: flex; flex-direction: column; gap: 12px; margin-bottom: 36px; text-align: left; }
+    .journey-step {
+      display: flex; align-items: flex-start; gap: 16px;
+      background: #fff; border: 1px solid #e5e5e5;
+      border-radius: 14px; padding: 18px 20px;
+    }
+    .journey-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; flex-shrink: 0;
+    }
+    .journey-icon.purple { background: #f5f0ff; }
+    .journey-icon.green  { background: #f0faf4; }
+    .journey-icon.blue   { background: #eff4ff; }
+    .journey-icon.orange { background: #FFF7ED; }
+    .journey-icon.rose   { background: #fff0f3; }
+    .journey-icon.amber  { background: #FFFBF5; }
+    .journey-body h3 { font-size: 0.9rem; font-weight: 600; color: #191919; margin-bottom: 4px; }
+    .journey-body p  { font-size: 0.82rem; color: #6B6B6B; line-height: 1.5; }
+    .journey-connector {
+      width: 2px; height: 14px;
+      background: #e5e5e5; margin-left: 36px;
+    }
+
+    /* ── Stage Recap ── */
+    .stage-recap {
+      margin-top: 20px;
+      padding: 14px 18px;
+      background: #FFFFFF;
+      border-radius: 10px;
+      border: 1px solid #e5e5e5;
+      font-size: 0.82rem;
+      color: #6B6B6B;
+      line-height: 1.55;
+    }
+    .stage-recap strong { color: #191919; }
+
+    /* ── Cells ── */
+    .vec-list { display: flex; flex-direction: column; gap: 8px; }
+    .vec-row {
+      display: grid;
+      grid-template-columns: 44px 1fr 20px 1fr;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #FFFFFF;
+      border: 1px solid #e5e5e5;
+      border-radius: 10px;
+    }
+    .vec-name { font-size: 0.72rem; font-weight: 600; color: #9a9a9a; }
+    .cells { display: flex; gap: 3px; }
+    .cell {
+      flex: 1; min-width: 0; height: 34px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.6rem; font-weight: 600; white-space: nowrap;
+      transition: all 0.3s ease;
+    }
+    .cell.bit-1 { background: #e8f6ee; border: 1px solid #a8d9bc; color: #2e7d52; }
+    .cell.bit-0 { background: #fdecea; border: 1px solid #f5b8b3; color: #c0392b; }
+    .arrow { color: #ccc; font-size: 0.85rem; text-align: center; }
+
+    /* ── Slider ── */
+    input[type=range] {
+      width: 100%; accent-color: #D97706;
+      height: 6px; border-radius: 3px; cursor: pointer;
+    }
+    .slider-wrap { margin: 16px 0; }
+    .slider-labels {
+      display: flex; justify-content: space-between;
+      font-size: 0.8rem; color: #6B6B6B; margin-bottom: 8px;
+    }
+    .slider-labels strong { color: #191919; }
+    .slider-ticks {
+      display: flex; justify-content: space-between;
+      font-size: 0.68rem; color: #bbb; margin-top: 6px; padding: 0 2px;
+    }
+
+    /* ── Bars ── */
+    .bar-group { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
+    .bar-row { display: flex; align-items: center; gap: 12px; }
+    .bar-label {
+      font-size: 0.75rem; font-weight: 600;
+      min-width: 100px; color: #6B6B6B;
+    }
+    .bar-track {
+      flex: 1; background: #f0f0ef;
+      border-radius: 6px; height: 28px; overflow: hidden;
+      border: 1px solid #e5e5e5;
+    }
+    .bar-fill {
+      height: 100%; border-radius: 6px;
+      display: flex; align-items: center;
+      padding-left: 10px;
+      font-size: 0.72rem; font-weight: 700;
+      color: #fff;
+      transition: width 0.5s ease;
+    }
+    .bar-fill.scalar { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
+    .bar-fill.binary { background: linear-gradient(90deg, #3a9e65, #2e7d52); }
+    .bar-fill.pq     { background: linear-gradient(90deg, #3b6fd4, #2a5cbf); }
+    .bar-fill.rq     { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .bar-fill.aq     { background: linear-gradient(90deg, #e11d48, #be123c); }
+    .bar-fill.recall { background: linear-gradient(90deg, #3a9e65, #2e7d52); }
+    .bar-fill.memory { background: linear-gradient(90deg, #3b6fd4, #2a5cbf); }
+    .bar-val {
+      font-size: 0.78rem; font-weight: 600;
+      min-width: 56px; text-align: right; color: #444;
+    }
+
+    /* ── Compression callout ── */
+    .compression-callout {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: #FFFBF5;
+      border: 1px solid #FDBA74;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 16px 0;
+    }
+    .compression-icon {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .compression-squares {
+      display: grid;
+      grid-template-columns: repeat(8, 8px);
+      gap: 2px;
+    }
+    .compression-squares .sq {
+      width: 8px; height: 8px;
+      border-radius: 2px;
+      background: #D97706;
+      transition: all 0.3s ease;
+    }
+    .compression-squares .sq.collapsed {
+      opacity: 0.15;
+      transform: scale(0.5);
+    }
+    .compression-text { font-size: 0.84rem; color: #444; }
+    .compression-text strong { color: #D97706; font-size: 1.1rem; }
+
+    /* ── When grid ── */
+    .when-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .when-box { border-radius: 12px; padding: 16px 18px; }
+    .when-box.yes { background: #f4fbf7; border: 1px solid #a8d9bc; }
+    .when-box.no  { background: #fef7f6; border: 1px solid #f5b8b3; }
+    .when-box h4 { font-size: 0.8rem; font-weight: 700; margin-bottom: 10px; }
+    .when-box.yes h4 { color: #2e7d52; }
+    .when-box.no  h4 { color: #c0392b; }
+    .when-box ul { list-style: none; padding: 0; }
+    .when-box ul li { font-size: 0.8rem; color: #444; line-height: 1.5; padding: 3px 0; }
+    .when-box.yes ul li::before { content: '✓'; color: #2e7d52; font-weight: 700; margin-right: 6px; }
+    .when-box.no  ul li::before { content: '✗'; color: #c0392b; font-weight: 700; margin-right: 6px; }
+
+    /* ── Takeaways ── */
+    .takeaways {
+      background: #FFFFFF;
+      border: 1px solid #e5e5e5;
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 20px;
+    }
+    .takeaways ul { list-style: none; padding: 0; margin: 0; font-size: 0.88rem; color: #444; line-height: 1.65; }
+    .takeaways li { padding: 8px 0; border-bottom: 1px solid #eee; padding-left: 1.1em; text-indent: -1.1em; }
+    .takeaways li:last-child { border-bottom: none; }
+
+    /* ── Comparison table ── */
+    .comp-table-wrap { overflow-x: auto; margin: 16px 0; }
+    .comp-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    .comp-table th {
+      text-align: left; font-size: 0.68rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: #9a9a9a; padding: 10px 12px; border-bottom: 2px solid #e5e5e5;
+      white-space: nowrap;
+    }
+    .comp-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0ef; vertical-align: middle; }
+    .comp-table tr:hover { background: #FFFBF5; }
+    .comp-table .method-name { font-weight: 600; }
+    .comp-table .method-name.scalar { color: #7c3aed; }
+    .comp-table .method-name.binary { color: #2e7d52; }
+    .comp-table .method-name.pq { color: #3b6fd4; }
+    .comp-table .method-name.rq { color: #d97706; }
+    .comp-table .method-name.aq { color: #e11d48; }
+
+    /* ── Decision tree ── */
+    .dt-card {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 16px;
+      padding: 28px;
+      margin: 16px 0;
+    }
+    .dt-question { font-size: 1rem; font-weight: 600; color: #191919; margin-bottom: 16px; }
+    .dt-options { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .dt-opt {
+      padding: 8px 18px;
+      border-radius: 20px;
+      border: 1px solid #e5e5e5;
+      background: #fff;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .dt-opt:hover { background: #FFFBF5; border-color: #FDBA74; }
+    .dt-opt.selected { background: #D97706; color: #fff; border-color: #D97706; }
+    .dt-result {
+      background: #f4fbf7;
+      border: 1px solid #a8d9bc;
+      border-radius: 12px;
+      padding: 20px;
+      font-size: 0.84rem;
+      color: #444;
+      line-height: 1.6;
+      margin-top: 16px;
+    }
+    .dt-result strong { color: #2e7d52; }
+
+    /* ── Spectrum ── */
+    .spectrum-wrap { margin: 20px 0; }
+    .spectrum-bar {
+      height: 12px;
+      border-radius: 6px;
+      background: linear-gradient(90deg, #7c3aed, #2e7d52, #d97706, #3b6fd4, #e11d48);
+      position: relative;
+      margin-bottom: 24px;
+    }
+    .spectrum-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: #9a9a9a;
+      margin-bottom: 12px;
+    }
+    .spectrum-dots {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-top: -18px;
+    }
+    .spectrum-dot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .spectrum-dot:hover { transform: scale(1.1); }
+    .spectrum-dot .dot {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    }
+    .spectrum-dot .dot.scalar { background: #7c3aed; }
+    .spectrum-dot .dot.binary { background: #2e7d52; }
+    .spectrum-dot .dot.rq { background: #d97706; }
+    .spectrum-dot .dot.pq { background: #3b6fd4; }
+    .spectrum-dot .dot.aq { background: #e11d48; }
+    .spectrum-dot .label { font-size: 0.65rem; color: #6B6B6B; font-weight: 500; }
+
+    /* ── Canvas ── */
+    .canvas-wrap {
+      background: #FAFAF8;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 16px;
+      margin: 16px 0;
+      text-align: center;
+    }
+    canvas { display: block; margin: 0 auto; max-width: 100%; }
+
+    /* ── Residual error bars ── */
+    .error-bars { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
+    .error-bar-row { display: flex; align-items: center; gap: 12px; }
+    .error-bar-label { font-size: 0.75rem; font-weight: 600; min-width: 80px; color: #6B6B6B; }
+    .error-bar-track {
+      flex: 1; background: #f0f0ef;
+      border-radius: 6px; height: 24px; overflow: hidden;
+      border: 1px solid #e5e5e5;
+    }
+    .error-bar-fill {
+      height: 100%; border-radius: 6px;
+      display: flex; align-items: center;
+      padding-left: 8px;
+      font-size: 0.68rem; font-weight: 700;
+      color: #fff;
+      transition: width 0.5s ease;
+    }
+
+    /* ── AQ codebook ── */
+    .codebook-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 16px 0;
+    }
+    .codebook-box {
+      background: #FAFAF8;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .codebook-box h4 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .codebook-box h4.cb1 { color: #3b6fd4; }
+    .codebook-box h4.cb2 { color: #2e7d52; }
+    .centroid-list { display: flex; flex-direction: column; gap: 4px; }
+    .centroid-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.72rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .centroid-item:hover { background: #e5e5e5; }
+    .centroid-item.selected { background: #FFFBF5; border: 1px solid #FDBA74; }
+    .centroid-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Vector decomposition bars ── */
+    .decomp-bars { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+    .decomp-row { display: flex; align-items: center; gap: 8px; }
+    .decomp-label { font-size: 0.72rem; font-weight: 600; min-width: 90px; color: #6B6B6B; }
+    .decomp-track {
+      flex: 1; height: 24px;
+      background: #f0f0ef;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #e5e5e5;
+      position: relative;
+    }
+    .decomp-fill {
+      height: 100%;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      padding-left: 8px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #fff;
+      transition: width 0.5s ease;
+    }
+
+    /* ── Ending ── */
+    .ending { padding: 8px 0 32px; }
+    .ending-hero {
+      text-align: center;
+      padding: 32px 24px 28px;
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 16px;
+      margin-bottom: 20px;
+    }
+    .ending-hero h2 {
+      font-size: 1.5rem; font-weight: 700;
+      letter-spacing: -0.02em; color: #191919;
+      margin-bottom: 8px;
+    }
+    .ending-hero p { font-size: 0.9rem; color: #6B6B6B; line-height: 1.6; max-width: 500px; margin: 0 auto; }
+
+    .section-title {
+      font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: #9a9a9a; margin-bottom: 16px;
+    }
+
+    .restart-wrap { text-align: center; padding: 8px 0 16px; }
+    .restart-wrap p { font-size: 0.84rem; color: #9a9a9a; margin-bottom: 16px; }
+
+    /* ── Animations ── */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+    .fade-in { animation: fadeIn 0.35s ease-out; }
+
+    @keyframes barGrow {
+      from { transform: scaleX(0); }
+      to { transform: scaleX(1); }
+    }
+    .bar-grow { animation: barGrow 0.5s ease-out; transform-origin: left; }
+
+    /* ── Responsive ── */
+    @media(max-width: 560px) {
+      .vec-row { grid-template-columns: 36px 1fr 16px 1fr; gap: 5px; }
+      .cell { height: 28px; font-size: 0.52rem; }
+      .when-grid { grid-template-columns: 1fr; }
+      .codebook-grid { grid-template-columns: 1fr; }
+      .comp-table { font-size: 0.7rem; }
+      .comp-table th, .comp-table td { padding: 8px 6px; }
+      .step-item { font-size: 0.6rem; padding: 8px 4px; }
+      .step-num { font-size: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ══════════ LANDING ══════════ -->
+  <div id="page-landing">
+    <div class="landing">
+      <div class="badge">Vector DB · Interactive Lab</div>
+      <h1>Quantization in Vector Databases</h1>
+      <p class="sub">
+        Compress vectors 4× to 256× smaller. But how much accuracy do you lose?<br>
+        Explore all five major quantization methods in about 10 minutes.
+      </p>
+      <div class="key-idea">
+        💡 <strong>The core idea:</strong> Quantization reduces the precision of vector numbers to save memory and speed up search. The trick is losing as little accuracy as possible. Each method makes a different tradeoff between compression, speed, and recall.
+      </div>
+      <div class="journey">
+        <div class="journey-step">
+          <div class="journey-icon purple">🎚️</div>
+          <div class="journey-body">
+            <h3>Step 1 — Scalar Quantization</h3>
+            <p>Reduce bits per number from 32 to 16, 8, or 4. See precision drop in real time.</p>
+          </div>
+        </div>
+        <div class="journey-connector"></div>
+        <div class="journey-step">
+          <div class="journey-icon green">🔢</div>
+          <div class="journey-body">
+            <h3>Step 2 — Binary Quantization</h3>
+            <p>Keep only the sign bit. 32× smaller — but does it still find the right results?</p>
+          </div>
+        </div>
+        <div class="journey-connector"></div>
+        <div class="journey-step">
+          <div class="journey-icon blue">🧩</div>
+          <div class="journey-body">
+            <h3>Step 3 — Product Quantization</h3>
+            <p>Split vectors, cluster subspaces, store centroid IDs. Watch k-means in action.</p>
+          </div>
+        </div>
+        <div class="journey-connector"></div>
+        <div class="journey-step">
+          <div class="journey-icon orange">🔄</div>
+          <div class="journey-body">
+            <h3>Step 4 — Residual Quantization</h3>
+            <p>Iteratively correct the error. Each stage refines the approximation.</p>
+          </div>
+        </div>
+        <div class="journey-connector"></div>
+        <div class="journey-step">
+          <div class="journey-icon rose">➕</div>
+          <div class="journey-body">
+            <h3>Step 5 — Additive Quantization</h3>
+            <p>Multiple codebooks cooperate to represent vectors more expressively.</p>
+          </div>
+        </div>
+        <div class="journey-connector"></div>
+        <div class="journey-step">
+          <div class="journey-icon amber">⚖️</div>
+          <div class="journey-body">
+            <h3>Step 6 — Compare & Decide</h3>
+            <p>Side-by-side comparison, memory calculator, and an interactive decision tree.</p>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-large" onclick="startLab()">Start the Lab →</button>
+    </div>
+  </div>
+
+  <!-- ══════════ LAB ══════════ -->
+  <div id="page-lab" style="display:none">
+    <div class="stepper" id="stepper">
+      <div class="step-item active" onclick="goStep(0)"><span class="step-num">①</span>Scalar</div>
+      <div class="step-item" onclick="goStep(1)"><span class="step-num">②</span>Binary</div>
+      <div class="step-item" onclick="goStep(2)"><span class="step-num">③</span>PQ</div>
+      <div class="step-item" onclick="goStep(3)"><span class="step-num">④</span>Residual</div>
+      <div class="step-item" onclick="goStep(4)"><span class="step-num">⑤</span>Additive</div>
+      <div class="step-item" onclick="goStep(5)"><span class="step-num">⑥</span>Compare</div>
+    </div>
+
+    <!-- STEP 0: Scalar Quantization -->
+    <div id="step-0" class="fade-in">
+      <div class="card">
+        <div class="card-label">Step 1 — Scalar Quantization</div>
+        <div class="explain">
+          <strong>Scalar quantization</strong> is the simplest form — just use fewer bits per number.
+          A 32-bit float becomes an 8-bit integer by mapping the range [min, max] to [0, 255].
+          You lose some precision but the math stays the same.
+        </div>
+        <div class="slider-wrap">
+          <div class="slider-labels">
+            <span>Bit depth</span>
+            <strong id="scalarBitsDisplay">8 bits</strong>
+          </div>
+          <input type="range" id="scalarBits" min="0" max="3" value="1" step="1" oninput="updateScalar()">
+          <div class="slider-ticks">
+            <span>32-bit</span><span>16-bit</span><span>8-bit</span><span>4-bit</span>
+          </div>
+        </div>
+        <div id="scalarGrid"></div>
+        <div class="compression-callout" id="scalarCompression"></div>
+        <div class="bar-group" id="scalarRecall"></div>
+        <div class="stage-recap"><strong>Recap:</strong> Scalar quantization trades bits for precision. 8-bit gives ~4× compression with ~3% recall loss — a great default choice.</div>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="backToLanding()">← Back</button>
+        <button class="btn btn-primary" onclick="goStep(1)">Next: Binary →</button>
+      </div>
+    </div>
+
+    <!-- STEP 1: Binary Quantization -->
+    <div id="step-1" style="display:none" class="fade-in">
+      <div class="card">
+        <div class="card-label">Step 2 — Binary Quantization</div>
+        <div class="explain">
+          <strong>Binary quantization</strong> is the most aggressive form of scalar quantization.
+          Each float becomes a single bit — just the sign (≥0 → 1, <0 → 0).
+          This gives 32× compression but works best with high-dimensional vectors (512+ dims).
+        </div>
+        <div style="margin-bottom:16px">
+          <button class="btn btn-primary btn-sm" onclick="generateBinary()">⟳ Generate new vectors</button>
+        </div>
+        <div id="binaryGrid"></div>
+        <div class="compression-callout">
+          <div class="compression-icon">
+            <div class="compression-squares" id="binarySquares"></div>
+          </div>
+          <div class="compression-text">
+            <strong>32× smaller</strong><br>
+            32 bits per float → 1 bit per float
+          </div>
+        </div>
+        <div class="when-grid" style="margin-top:16px">
+          <div class="when-box yes">
+            <h4>✅ Good fit</h4>
+            <ul>
+              <li>Vectors with 512+ dimensions</li>
+              <li>Large indexes (1M+ vectors)</li>
+              <li>Memory is the bottleneck</li>
+            </ul>
+          </div>
+          <div class="when-box no">
+            <h4>❌ Poor fit</h4>
+            <ul>
+              <li>Low-dimensional vectors (<128 dims)</li>
+              <li>Small datasets that fit in RAM</li>
+              <li>Recall accuracy is critical</li>
+            </ul>
+          </div>
+        </div>
+        <div class="stage-recap"><strong>Recap:</strong> Binary = 1 bit per dimension = 32× smaller. Works great with 768+ dim embeddings like OpenAI or BERT.</div>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="goStep(0)">← Back</button>
+        <button class="btn btn-primary" onclick="goStep(2)">Next: Product Quantization →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Product Quantization -->
+    <div id="step-2" style="display:none" class="fade-in">
+      <div class="card">
+        <div class="card-label">Step 3 — Product Quantization (PQ)</div>
+        <div class="explain">
+          <strong>Product Quantization</strong> splits each vector into M subvectors. For each sub-space,
+          run k-means to find representative centroids. Store only the centroid ID instead of the original floats.
+          The set of centroids for each sub-space is called a <strong>codebook</strong>.
+        </div>
+        <div id="pqSubvectorView"></div>
+        <div class="canvas-wrap">
+          <div style="font-size:0.78rem;font-weight:600;margin-bottom:8px;color:#6B6B6B">K-means clustering on a 2D sub-space</div>
+          <canvas id="pqCanvas" width="400" height="300"></canvas>
+          <div style="margin-top:12px">
+            <button class="btn btn-primary btn-sm" onclick="runPQClustering()">▶ Run clustering</button>
+            <button class="btn btn-ghost btn-sm" onclick="resetPQClustering()">↺ Reset</button>
+          </div>
+        </div>
+        <div id="pqCodebookView"></div>
+        <div class="slider-wrap">
+          <div class="slider-labels">
+            <span>PQ parameters</span>
+            <strong id="pqParamsDisplay">3 subvectors × 16 centroids (4 bits)</strong>
+          </div>
+          <input type="range" id="pqSubM" min="2" max="6" value="3" step="1" oninput="updatePQParams()">
+          <div class="slider-ticks">
+            <span>2 sub</span><span>3 sub</span><span>4 sub</span><span>5 sub</span><span>6 sub</span>
+          </div>
+        </div>
+        <div id="pqCompression"></div>
+        <div class="stage-recap"><strong>Recap:</strong> PQ splits vectors, clusters subspaces, and stores centroid IDs. It achieves 16-256× compression with tunable accuracy — the choice of production vector databases.</div>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
+        <button class="btn btn-primary" onclick="goStep(3)">Next: Residual →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Residual Quantization -->
+    <div id="step-3" style="display:none" class="fade-in">
+      <div class="card">
+        <div class="card-label">Step 4 — Residual Quantization (RQ)</div>
+        <div class="explain">
+          <strong>Residual Quantization</strong> refines the approximation iteratively.
+          After the first quantization pass, compute the residual (the error).
+          Then quantize that residual too. Each stage adds a correction layer,
+          progressively reducing the reconstruction error.
+        </div>
+        <div class="slider-wrap">
+          <div class="slider-labels">
+            <span>Residual stages</span>
+            <strong id="rqStagesDisplay">3 stages</strong>
+          </div>
+          <input type="range" id="rqStages" min="1" max="4" value="3" step="1" oninput="updateRQ()">
+          <div class="slider-ticks">
+            <span>1 stage</span><span>2</span><span>3</span><span>4</span>
+          </div>
+        </div>
+        <div id="rqVectorView"></div>
+        <div id="rqErrorBars"></div>
+        <div id="rqRecall"></div>
+        <div class="stage-recap"><strong>Recap:</strong> RQ = iterative refinement. Each residual stage corrects the previous error. 3 stages of 8-bit gives ~98% recall at 3× the cost of single-stage scalar.</div>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
+        <button class="btn btn-primary" onclick="goStep(4)">Next: Additive →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: Additive Quantization -->
+    <div id="step-4" style="display:none" class="fade-in">
+      <div class="card">
+        <div class="card-label">Step 5 — Additive Quantization (AQ)</div>
+        <div class="explain">
+          <strong>Additive Quantization</strong> represents each vector as the sum of codewords from multiple codebooks.
+          Unlike PQ which splits the vector into independent subspaces, AQ lets all codebooks contribute to all dimensions.
+          This gives more flexibility — two codebooks with 256 centroids each can represent 65,536 combinations.
+        </div>
+        <div id="aqCodebooks"></div>
+        <div id="aqDecomposition"></div>
+        <div id="aqComparison"></div>
+        <div class="slider-wrap">
+          <div class="slider-labels">
+            <span>AQ parameters</span>
+            <strong id="aqParamsDisplay">2 codebooks × 16 centroids (8 bits)</strong>
+          </div>
+          <input type="range" id="aqCodebooks" min="2" max="4" value="2" step="1" oninput="updateAQParams()">
+          <div class="slider-ticks">
+            <span>2 CB</span><span>3 CB</span><span>4 CB</span>
+          </div>
+        </div>
+        <div id="aqCompression"></div>
+        <div class="stage-recap"><strong>Recap:</strong> AQ = multiple cooperating codebooks. More expressive than PQ at the same bit rate. Used in Faiss and state-of-the-art compression research.</div>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="goStep(3)">← Back</button>
+        <button class="btn btn-primary" onclick="goStep(5)">Next: Compare & Decide →</button>
+      </div>
+    </div>
+
+    <!-- STEP 5: Compare & Decide -->
+    <div id="step-5" style="display:none" class="fade-in">
+      <div class="card">
+        <div class="card-label">Step 6 — Compare All Methods</div>
+        <div class="explain">
+          Now that you've seen each method, let's compare them side by side and find the right choice for your use case.
+        </div>
+        <div class="comp-table-wrap" id="compTable"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Quantization Spectrum</div>
+        <div class="spectrum-wrap">
+          <div class="spectrum-labels">
+            <span>Simplest / Least Compression</span>
+            <span>Most Complex / Most Compression</span>
+          </div>
+          <div class="spectrum-bar"></div>
+          <div class="spectrum-dots">
+            <div class="spectrum-dot"><div class="dot scalar"></div><span class="label">Scalar</span></div>
+            <div class="spectrum-dot"><div class="dot binary"></div><span class="label">Binary</span></div>
+            <div class="spectrum-dot"><div class="dot rq"></div><span class="label">Residual</span></div>
+            <div class="spectrum-dot"><div class="dot pq"></div><span class="label">PQ</span></div>
+            <div class="spectrum-dot"><div class="dot aq"></div><span class="label">Additive</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Memory Savings Calculator</div>
+        <div class="slider-wrap">
+          <div class="slider-labels">
+            <span>Number of vectors</span>
+            <strong id="calcCountDisplay">1,000,000</strong>
+          </div>
+          <input type="range" id="calcCount" min="0" max="6" value="4" step="1" oninput="updateCalculator()">
+          <div class="slider-ticks">
+            <span>10K</span><span>100K</span><span>1M</span><span>5M</span><span>10M</span><span>50M</span><span>100M</span>
+          </div>
+        </div>
+        <div class="slider-wrap">
+          <div class="slider-labels">
+            <span>Dimensions</span>
+            <strong id="calcDimsDisplay">768</strong>
+          </div>
+          <input type="range" id="calcDims" min="0" max="2" value="1" step="1" oninput="updateCalculator()">
+          <div class="slider-ticks">
+            <span>384</span><span>768</span><span>1536</span>
+          </div>
+        </div>
+        <div class="bar-group" id="calcBars"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Which Quantization Should You Use?</div>
+        <div id="decisionTree"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Real-World Usage</div>
+        <div id="realWorld"></div>
+      </div>
+
+      <div class="nav">
+        <button class="btn btn-ghost" onclick="goStep(4)">← Back</button>
+        <button class="btn btn-primary" onclick="goToEnding()">Summary →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ ENDING ══════════ -->
+  <div id="page-ending" style="display:none">
+    <div class="ending">
+      <div class="ending-hero">
+        <div class="badge">Key Takeaway</div>
+        <h2>There is no single best quantization</h2>
+        <p>
+          The right choice depends on your vector dimensions, dataset size, accuracy requirements, and engineering capacity.
+          Scalar 8-bit is the safest default. PQ is the production favorite. RQ gives the best accuracy.
+        </p>
+      </div>
+
+      <div class="takeaways">
+        <div class="section-title">Summary — key takeaways</div>
+        <ul>
+          <li><strong>Scalar (8-bit):</strong> Best default — 4× smaller, ~97% recall, zero complexity.</li>
+          <li><strong>Binary (1-bit):</strong> Maximum simplicity — 32× smaller, needs 512+ dims for good recall.</li>
+          <li><strong>Product Quantization:</strong> Best compression — up to 256×, production favorite with tunable accuracy.</li>
+          <li><strong>Residual Quantization:</strong> Best accuracy — iterative refinement achieves ~99% recall.</li>
+          <li><strong>Additive Quantization:</strong> Most expressive — cooperating codebooks, research-grade quality.</li>
+          <li>All methods trade some recall for massive memory savings. The key is choosing the right tradeoff for your use case.</li>
+        </ul>
+      </div>
+
+      <div class="restart-wrap">
+        <p>Want to experiment again with different parameters?</p>
+        <button class="btn btn-primary btn-large" onclick="restartLab()">↺ Run the lab again</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* ═══════════════════════════════════════════
+     GLOBALS
+     ═══════════════════════════════════════════ */
+  const DIMS = 8;
+  let curStep = 0;
+  let pqPoints = [], pqCentroids = [], pqAssignments = [], pqIter = 0, pqAnimId = null;
+  let aqCB1 = [], aqCB2 = [], aqTarget = [], aqSel1 = 0, aqSel2 = 0;
+  let rqVector = [], rqStagesData = [];
+
+  const rand = () => parseFloat((Math.random() * 2 - 1).toFixed(3));
+  const randN = (n) => Array.from({ length: n }, rand);
+
+  /* ═══════════════════════════════════════════
+     QUANTIZATION FUNCTIONS
+     ═══════════════════════════════════════════ */
+  function scalarQuantize(v, bits) {
+    if (bits >= 32) return v.slice();
+    const levels = Math.pow(2, bits);
+    const mn = Math.min(...v), mx = Math.max(...v);
+    const range = mx - mn || 1;
+    return v.map(x => {
+      const q = Math.round(((x - mn) / range) * (levels - 1));
+      return mn + (q / (levels - 1)) * range;
+    });
+  }
+
+  function toBinary(v) { return v.map(x => x >= 0 ? 1 : 0); }
+
+  function cosine(a, b) {
+    let d = 0, na = 0, nb = 0;
+    for (let i = 0; i < a.length; i++) { d += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; }
+    return d / (Math.sqrt(na) * Math.sqrt(nb) + 1e-9);
+  }
+
+  function hamming(a, b) { return a.reduce((s, _, i) => s + (a[i] ^ b[i]), 0); }
+
+  function vecDist(a, b) { return Math.sqrt(a.reduce((s, x, i) => s + (x - b[i]) ** 2, 0)); }
+
+  function kMeans(points, k, iterations = 15) {
+    const dim = points[0].length;
+    let centroids = points.slice(0, k).map(p => p.slice());
+    let assignments = new Array(points.length);
+    for (let iter = 0; iter < iterations; iter++) {
+      let changed = false;
+      const sums = Array.from({ length: k }, () => new Array(dim).fill(0));
+      const counts = new Array(k).fill(0);
+      for (let i = 0; i < points.length; i++) {
+        let minD = Infinity, best = 0;
+        for (let c = 0; c < k; c++) {
+          const d = vecDist(points[i], centroids[c]);
+          if (d < minD) { minD = d; best = c; }
+        }
+        if (assignments[i] !== best) changed = true;
+        assignments[i] = best;
+        for (let d = 0; d < dim; d++) sums[best][d] += points[i][d];
+        counts[best]++;
+      }
+      for (let c = 0; c < k; c++) {
+        if (counts[c] === 0) continue;
+        for (let d = 0; d < dim; d++) centroids[c][d] = sums[c][d] / counts[c];
+      }
+      if (!changed) break;
+    }
+    return { centroids, assignments };
+  }
+
+  function residualQuantize(v, stages, bits = 8) {
+    const results = [];
+    let residual = v.slice();
+    let approximation = new Array(v.length).fill(0);
+    for (let s = 0; s < stages; s++) {
+      const q = scalarQuantize(residual, bits);
+      for (let i = 0; i < v.length; i++) approximation[i] += q[i];
+      const error = vecDist(v, approximation);
+      const origError = vecDist(v, new Array(v.length).fill(0));
+      results.push({
+        stage: s + 1,
+        quantized: q.slice(),
+        approximation: approximation.slice(),
+        residual: residual.map((x, i) => x - q[i]),
+        error,
+        errorPct: Math.round((1 - error / origError) * 100)
+      });
+      residual = results[s].residual;
+    }
+    return results;
+  }
+
+  function additiveQuantize(v, numCodebooks, centroidsPerCB) {
+    const dim = v.length;
+    const cbPerDim = Math.ceil(dim / numCodebooks);
+    const codebooks = [];
+    for (let cb = 0; cb < numCodebooks; cb++) {
+      const centroids = [];
+      for (let c = 0; c < centroidsPerCB; c++) {
+        centroids.push(randN(dim).map(x => x * 0.5));
+      }
+      codebooks.push(centroids);
+    }
+    const selection = new Array(numCodebooks).fill(0);
+    function getApproximation() {
+      const approx = new Array(dim).fill(0);
+      for (let cb = 0; cb < numCodebooks; cb++) {
+        const c = codebooks[cb][selection[cb]];
+        for (let d = 0; d < dim; d++) approx[d] += c[d];
+      }
+      return approx;
+    }
+    function greedySelect() {
+      for (let cb = 0; cb < numCodebooks; cb++) {
+        let bestC = 0, bestD = Infinity;
+        for (let c = 0; c < centroidsPerCB; c++) {
+          selection[cb] = c;
+          const approx = getApproximation();
+          const d = vecDist(v, approx);
+          if (d < bestD) { bestD = d; bestC = c; }
+        }
+        selection[cb] = bestC;
+      }
+    }
+    greedySelect();
+    return { codebooks, selection, approximation: getApproximation() };
+  }
+
+  /* ═══════════════════════════════════════════
+     FP COLOR HELPER
+     ═══════════════════════════════════════════ */
+  function fpColor(v, alpha = 1) {
+    if (v >= 0) { const t = Math.min(v, 1); return `rgba(${Math.round(220 - t * 50)},${Math.round(230 - t * 20)},255,${alpha})`; }
+    const t = Math.min(-v, 1); return `rgba(255,${Math.round(220 - t * 50)},${Math.round(215 - t * 50)},${alpha})`;
+  }
+
+  /* ═══════════════════════════════════════════
+     PAGE ROUTING
+     ═══════════════════════════════════════════ */
+  function show(id) {
+    ['page-landing', 'page-lab', 'page-ending'].forEach(p => {
+      document.getElementById(p).style.display = p === id ? 'block' : 'none';
+    });
+  }
+
+  function startLab() {
+    show('page-lab');
+    updateScalar();
+    generateBinary();
+    initPQ();
+    updateRQ();
+    initAQ();
+    updateCalculator();
+    initDecisionTree();
+    renderRealWorld();
+  }
+
+  function backToLanding() { show('page-landing'); }
+
+  function goToEnding() { show('page-ending'); }
+
+  function restartLab() {
+    curStep = 0;
+    generateBinary();
+    initPQ();
+    updateRQ();
+    initAQ();
+    goStep(0);
+    show('page-lab');
+  }
+
+  /* ═══════════════════════════════════════════
+     STEPPER
+     ═══════════════════════════════════════════ */
+  function goStep(s) {
+    document.getElementById(`step-${curStep}`).style.display = 'none';
+    curStep = s;
+    const el = document.getElementById(`step-${s}`);
+    el.style.display = 'block';
+    el.classList.remove('fade-in');
+    void el.offsetWidth;
+    el.classList.add('fade-in');
+    document.querySelectorAll('.step-item').forEach((el, i) => {
+      el.className = 'step-item' + (i === s ? ' active' : i < s ? ' done' : '');
+    });
+    if (s === 0) updateScalar();
+    if (s === 2) { initPQ(); renderPQSubvector(); updatePQParams(); }
+    if (s === 3) updateRQ();
+    if (s === 4) { initAQ(); renderAQ(); }
+    if (s === 5) { renderCompTable(); updateCalculator(); renderDecisionTree(); }
+  }
+
+  /* ═══════════════════════════════════════════
+     STAGE 0: SCALAR QUANTIZATION
+     ═══════════════════════════════════════════ */
+  const bitSteps = [32, 16, 8, 4];
+  const recallEstimates = [100, 99.5, 97, 85];
+  const scalarVec = randN(DIMS);
+
+  function updateScalar() {
+    const idx = +document.getElementById('scalarBits').value;
+    const bits = bitSteps[idx];
+    document.getElementById('scalarBitsDisplay').textContent = bits + ' bits';
+
+    const q = scalarQuantize(scalarVec, bits);
+    const levels = bits >= 32 ? 'continuous' : Math.pow(2, bits);
+    const compression = bits >= 32 ? '1× (original)' : Math.round(32 / bits) + '× smaller';
+
+    let html = `<div class="vec-row">
+      <span class="vec-name">Orig</span>
+      <div class="cells">${scalarVec.map(x => `<div class="cell" style="background:${fpColor(x)};border:1px solid #e0e0e0;color:#333">${x.toFixed(3)}</div>`).join('')}</div>
+      <span class="arrow">→</span>
+      <div class="cells">${q.map((x, i) => {
+        const diff = Math.abs(x - scalarVec[i]);
+        const alpha = Math.max(0.3, 1 - diff * 3);
+        return `<div class="cell" style="background:${fpColor(x, alpha)};border:1px solid #e0e0e0;color:#333">${bits >= 32 ? x.toFixed(3) : x.toFixed(3)}</div>`;
+      }).join('')}</div>
+    </div>`;
+    html += `<div style="font-size:0.72rem;color:#9a9a9a;margin-top:6px;text-align:center">
+      ${bits >= 32 ? 'Original 32-bit floats' : `Quantized to ${levels} discrete levels (${bits} bits per value)`}
+    </div>`;
+    document.getElementById('scalarGrid').innerHTML = html;
+
+    document.getElementById('scalarCompression').innerHTML = `
+      <div class="compression-icon">
+        <div class="compression-squares">
+          ${Array.from({ length: 32 }, (_, i) => `<div class="sq ${i >= bits ? 'collapsed' : ''}"></div>`).join('')}
+        </div>
+      </div>
+      <div class="compression-text">
+        <strong>${compression}</strong><br>
+        32 bits → ${bits} bits per value (${levels} levels)
+      </div>`;
+
+    const recall = recallEstimates[idx];
+    document.getElementById('scalarRecall').innerHTML = `
+      <div class="bar-row">
+        <span class="bar-label">Est. recall</span>
+        <div class="bar-track">
+          <div class="bar-fill recall" style="width:${recall}%">${recall}%</div>
+        </div>
+        <span class="bar-val">${recall}%</span>
+      </div>`;
+  }
+
+  /* ═══════════════════════════════════════════
+     STAGE 1: BINARY QUANTIZATION
+     ═══════════════════════════════════════════ */
+  let binVecs = [], binBins = [];
+
+  function generateBinary() {
+    binVecs = Array.from({ length: 6 }, () => randN(DIMS));
+    binBins = binVecs.map(toBinary);
+    renderBinary();
+  }
+
+  function renderBinary() {
+    let html = binVecs.map((v, i) => {
+      const b = binBins[i];
+      const fp = v.map(x => `<div class="cell" style="background:${fpColor(x)};border:1px solid #e0e0e0;color:#333">${x.toFixed(2)}</div>`).join('');
+      const bn = b.map(x => `<div class="cell ${x ? 'bit-1' : 'bit-0'}">${x}</div>`).join('');
+      return `<div class="vec-row">
+        <span class="vec-name">V${String(i + 1).padStart(2, '0')}</span>
+        <div class="cells">${fp}</div>
+        <span class="arrow">→</span>
+        <div class="cells">${bn}</div>
+      </div>`;
+    }).join('');
+    document.getElementById('binaryGrid').innerHTML = html;
+
+    document.getElementById('binarySquares').innerHTML =
+      Array.from({ length: 32 }, (_, i) => `<div class="sq ${i > 0 ? 'collapsed' : ''}"></div>`).join('');
+  }
+
+  /* ═══════════════════════════════════════════
+     STAGE 2: PRODUCT QUANTIZATION
+     ═══════════════════════════════════════════ */
+  const pqClusterColors = ['#3b6fd4', '#2e7d52', '#7c3aed', '#d97706', '#e11d48', '#06b6d4', '#84cc16', '#f97316'];
+
+  function initPQ() {
+    pqPoints = Array.from({ length: 40 }, () => [rand() * 0.8, rand() * 0.8]);
+    pqCentroids = pqPoints.slice(0, 8).map(p => p.slice());
+    pqAssignments = new Array(pqPoints.length).fill(0);
+    pqIter = 0;
+    if (pqAnimId) cancelAnimationFrame(pqAnimId);
+    drawPQCanvas();
+  }
+
+  function resetPQClustering() {
+    initPQ();
+    renderPQSubvector();
+    updatePQParams();
+  }
+
+  function runPQClustering() {
+    if (pqAnimId) return;
+    pqIter = 0;
+    const maxIter = 12;
+    function animate() {
+      if (pqIter >= maxIter) {
+        pqAnimId = null;
+        renderPQCodebook();
+        return;
+      }
+      const result = kMeans(pqPoints, pqCentroids.length, 1);
+      pqCentroids = result.centroids;
+      pqAssignments = result.assignments;
+      pqIter++;
+      drawPQCanvas();
+      pqAnimId = requestAnimationFrame(() => setTimeout(animate, 200));
+    }
+    animate();
+  }
+
+  function drawPQCanvas() {
+    const canvas = document.getElementById('pqCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const pad = 30;
+    const plotW = W - pad * 2, plotH = H - pad * 2;
+
+    ctx.strokeStyle = '#e5e5e5';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const x = pad + (plotW / 4) * i;
+      const y = pad + (plotH / 4) * i;
+      ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, H - pad); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
+    }
+
+    for (let i = 0; i < pqPoints.length; i++) {
+      const x = pad + pqPoints[i][0] * plotW;
+      const y = pad + (1 - pqPoints[i][1]) * plotH;
+      const color = pqCentroids.length > 0 ? pqClusterColors[pqAssignments[i] % pqClusterColors.length] : '#999';
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    for (let c = 0; c < pqCentroids.length; c++) {
+      const x = pad + pqCentroids[c][0] * plotW;
+      const y = pad + (1 - pqCentroids[c][1]) * plotH;
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = pqClusterColors[c % pqClusterColors.length];
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x, y, 12, 0, Math.PI * 2);
+      ctx.strokeStyle = pqClusterColors[c % pqClusterColors.length] + '40';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    if (pqIter > 0) {
+      ctx.fillStyle = '#6B6B6B';
+      ctx.font = '12px sans-serif';
+      ctx.fillText(`Iteration ${pqIter}`, pad, H - 8);
+    }
+  }
+
+  function renderPQSubvector() {
+    const dims = 12;
+    const subM = +document.getElementById('pqSubM').value;
+    const subDim = Math.floor(dims / subM);
+    const vec = randN(dims);
+    let html = `<div style="font-size:0.78rem;font-weight:600;margin-bottom:8px;color:#6B6B6B">Splitting a ${dims}-dim vector into ${subM} subvectors of ${subDim} dims</div>`;
+    html += '<div style="display:flex;gap:4px;flex-wrap:wrap">';
+    for (let s = 0; s < subM; s++) {
+      const start = s * subDim;
+      const sub = vec.slice(start, start + subDim);
+      const color = pqClusterColors[s % pqClusterColors.length];
+      html += `<div style="flex:1;min-width:80px;background:#FAFAF8;border:1px solid #e5e5e5;border-radius:8px;padding:8px">
+        <div style="font-size:0.65rem;font-weight:700;color:${color};margin-bottom:4px">Subvector ${s + 1}</div>
+        <div style="display:flex;gap:2px">${sub.map(x => `<div class="cell" style="background:${fpColor(x)};border:1px solid #e0e0e0;color:#333;height:28px;font-size:0.55rem">${x.toFixed(2)}</div>`).join('')}</div>
+      </div>`;
+    }
+    html += '</div>';
+    document.getElementById('pqSubvectorView').innerHTML = html;
+  }
+
+  function renderPQCodebook() {
+    const subM = +document.getElementById('pqSubM').value;
+    const k = 16;
+    const bitsPerSub = Math.log2(k);
+    let html = `<div style="font-size:0.78rem;font-weight:600;margin-bottom:8px;color:#6B6B6B">Codebook: ${subM} subvectors × ${k} centroids = ${bitsPerSub} bits each</div>`;
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
+    for (let s = 0; s < subM; s++) {
+      const color = pqClusterColors[s % pqClusterColors.length];
+      html += `<div style="flex:1;min-width:120px;background:#FAFAF8;border:1px solid #e5e5e5;border-radius:8px;padding:8px">
+        <div style="font-size:0.65rem;font-weight:700;color:${color};margin-bottom:4px">Codebook ${s + 1}</div>
+        <div style="font-size:0.62rem;color:#6B6B6B">${k} centroids stored<br>Each vector → ${bitsPerSub} bits</div>
+      </div>`;
+    }
+    html += '</div>';
+    document.getElementById('pqCodebookView').innerHTML = html;
+  }
+
+  function updatePQParams() {
+    const subM = +document.getElementById('pqSubM').value;
+    const k = 16;
+    const bitsPerSub = Math.log2(k);
+    const totalBits = subM * bitsPerSub;
+    const origBits = 12 * 32;
+    const compression = Math.round(origBits / totalBits);
+
+    document.getElementById('pqParamsDisplay').textContent = `${subM} subvectors × ${k} centroids (${bitsPerSub} bits)`;
+
+    document.getElementById('pqCompression').innerHTML = `
+      <div class="compression-callout">
+        <div class="compression-text">
+          <strong>${compression}× compression</strong><br>
+          Original: ${origBits} bits → PQ: ${totalBits} bits (${subM} × ${bitsPerSub})
+        </div>
+      </div>`;
+    renderPQSubvector();
+    renderPQCodebook();
+  }
+
+  /* ═══════════════════════════════════════════
+     STAGE 3: RESIDUAL QUANTIZATION
+     ═══════════════════════════════════════════ */
+  function updateRQ() {
+    const stages = +document.getElementById('rqStages').value;
+    document.getElementById('rqStagesDisplay').textContent = stages + ' stage' + (stages > 1 ? 's' : '');
+
+    rqVector = randN(DIMS);
+    rqStagesData = residualQuantize(rqVector, stages, 8);
+
+    let html = `<div style="font-size:0.78rem;font-weight:600;margin-bottom:8px;color:#6B6B6B">Vector approximation after each stage</div>`;
+    html += '<div class="vec-list">';
+    html += `<div class="vec-row">
+      <span class="vec-name">Orig</span>
+      <div class="cells">${rqVector.map(x => `<div class="cell" style="background:${fpColor(x)};border:1px solid #e0e0e0;color:#333">${x.toFixed(3)}</div>`).join('')}</div>
+      <span class="arrow"></span>
+      <div class="cells"></div>
+    </div>`;
+
+    rqStagesData.forEach((s, i) => {
+      html += `<div class="vec-row">
+        <span class="vec-name" style="color:#d97706">Stage ${s.stage}</span>
+        <div class="cells">${s.approximation.map((x, j) => {
+          const diff = Math.abs(x - rqVector[j]);
+          const alpha = Math.max(0.4, 1 - diff * 2);
+          return `<div class="cell" style="background:rgba(217,119,6,${alpha * 0.2});border:1px solid rgba(217,119,6,${alpha});color:#d97706">${x.toFixed(3)}</div>`;
+        }).join('')}</div>
+        <span class="arrow">→</span>
+        <div style="font-size:0.72rem;color:#d97706;font-weight:600">Error: ${s.error.toFixed(3)}</div>
+      </div>`;
+    });
+    html += '</div>';
+    document.getElementById('rqVectorView').innerHTML = html;
+
+    const maxError = vecDist(rqVector, new Array(DIMS).fill(0));
+    let barsHtml = '<div class="error-bars">';
+    barsHtml += `<div class="error-bar-row">
+      <span class="error-bar-label">Initial</span>
+      <div class="error-bar-track"><div class="error-bar-fill" style="width:100%;background:#c0392b">100%</div></div>
+    </div>`;
+    rqStagesData.forEach(s => {
+      const pct = Math.round((s.error / maxError) * 100);
+      const color = pct > 50 ? '#c0392b' : pct > 25 ? '#d97706' : '#2e7d52';
+      barsHtml += `<div class="error-bar-row">
+        <span class="error-bar-label">Stage ${s.stage}</span>
+        <div class="error-bar-track"><div class="error-bar-fill" style="width:${pct}%;background:${color}">${pct}%</div></div>
+      </div>`;
+    });
+    barsHtml += '</div>';
+    document.getElementById('rqErrorBars').innerHTML = barsHtml;
+
+    const finalRecall = Math.min(99.5, 85 + stages * 4.5);
+    document.getElementById('rqRecall').innerHTML = `
+      <div class="bar-group">
+        <div class="bar-row">
+          <span class="bar-label">Est. recall</span>
+          <div class="bar-track">
+            <div class="bar-fill rq" style="width:${finalRecall}%">~${finalRecall}%</div>
+          </div>
+          <span class="bar-val">~${finalRecall}%</span>
+        </div>
+      </div>`;
+  }
+
+  /* ═══════════════════════════════════════════
+     STAGE 4: ADDITIVE QUANTIZATION
+     ═══════════════════════════════════════════ */
+  function initAQ() {
+    aqTarget = randN(6);
+    const result = additiveQuantize(aqTarget, 2, 16);
+    aqCB1 = result.codebooks[0];
+    aqCB2 = result.codebooks[1];
+    aqSel1 = result.selection[0];
+    aqSel2 = result.selection[1];
+  }
+
+  function renderAQ() {
+    const numCB = +document.getElementById('aqCodebooks').value;
+    const result = additiveQuantize(aqTarget, numCB, 16);
+    const cbs = result.codebooks;
+    const sel = result.selection;
+
+    let html = '<div class="codebook-grid">';
+    for (let cb = 0; cb < numCB; cb++) {
+      const color = cb === 0 ? '#3b6fd4' : cb === 1 ? '#2e7d52' : cb === 2 ? '#d97706' : '#e11d48';
+      const cls = cb === 0 ? 'cb1' : 'cb2';
+      html += `<div class="codebook-box">
+        <h4 class="${cls}">Codebook ${cb + 1} (16 centroids)</h4>
+        <div class="centroid-list">
+          ${cbs[cb].slice(0, 6).map((c, i) => `
+            <div class="centroid-item ${i === sel[cb] ? 'selected' : ''}">
+              <div class="centroid-dot" style="background:${color}"></div>
+              <span>C${i}: [${c[0].toFixed(2)}, ${c[1].toFixed(2)}, ...]</span>
+            </div>
+          `).join('')}
+          <div style="font-size:0.65rem;color:#9a9a9a;padding:4px 8px">+ ${cbs[cb].length - 6} more...</div>
+        </div>
+      </div>`;
+    }
+    html += '</div>';
+    document.getElementById('aqCodebooks').innerHTML = html;
+
+    const approx = result.approximation;
+    const error = vecDist(aqTarget, approx);
+    const maxError = vecDist(aqTarget, new Array(aqTarget.length).fill(0));
+    const recall = Math.min(99, Math.round((1 - error / maxError) * 100));
+
+    let decompHtml = '<div class="decomp-bars">';
+    decompHtml += `<div class="decomp-row">
+      <span class="decomp-label">Original</span>
+      <div class="decomp-track"><div class="decomp-fill" style="width:100%;background:#191919">target</div></div>
+    </div>`;
+    for (let cb = 0; cb < numCB; cb++) {
+      const color = cb === 0 ? '#3b6fd4' : cb === 1 ? '#2e7d52' : cb === 2 ? '#d97706' : '#e11d48';
+      const contrib = Math.abs(cbs[cb][sel[cb]].reduce((s, x) => s + x, 0));
+      decompHtml += `<div class="decomp-row">
+        <span class="decomp-label">CB${cb + 1} contrib</span>
+        <div class="decomp-track"><div class="decomp-fill" style="width:${Math.min(100, contrib * 50)}%;background:${color}">${contrib.toFixed(2)}</div></div>
+      </div>`;
+    }
+    decompHtml += `<div class="decomp-row">
+      <span class="decomp-label">Sum (AQ)</span>
+      <div class="decomp-track"><div class="decomp-fill" style="width:${recall}%;background:#D97706">~${recall}% match</div></div>
+    </div>`;
+    decompHtml += '</div>';
+    document.getElementById('aqDecomposition').innerHTML = decompHtml;
+
+    const pqBits = numCB * Math.log2(16);
+    const origBits = 6 * 32;
+    const compression = Math.round(origBits / pqBits);
+    document.getElementById('aqCompression').innerHTML = `
+      <div class="compression-callout">
+        <div class="compression-text">
+          <strong>${compression}× compression</strong><br>
+          Original: ${origBits} bits → AQ: ${pqBits} bits (${numCB} codebooks × 4 bits). Est. recall: ~${recall}%
+        </div>
+      </div>`;
+
+    document.getElementById('aqComparison').innerHTML = `
+      <div style="font-size:0.78rem;color:#6B6B6B;line-height:1.6;margin-top:8px">
+        <strong style="color:#191919">AQ vs PQ:</strong> At the same bit rate, AQ represents ${Math.pow(16, numCB).toLocaleString()} possible combinations
+        vs PQ's ${Math.pow(16, numCB) / Math.pow(2, numCB)} independent subvector choices. AQ's codebooks cooperate to better approximate the original vector.
+      </div>`;
+  }
+
+  function updateAQParams() {
+    const numCB = +document.getElementById('aqCodebooks').value;
+    document.getElementById('aqParamsDisplay').textContent = `${numCB} codebooks × 16 centroids (${numCB * 4} bits)`;
+    renderAQ();
+  }
+
+  /* ═══════════════════════════════════════════
+     STAGE 5: COMPARE & DECIDE
+     ═══════════════════════════════════════════ */
+  function renderCompTable() {
+    document.getElementById('compTable').innerHTML = `
+      <table class="comp-table">
+        <thead><tr>
+          <th>Property</th>
+          <th>Scalar (8-bit)</th>
+          <th>Binary (1-bit)</th>
+          <th>Product Q.</th>
+          <th>Residual Q.</th>
+          <th>Additive Q.</th>
+        </tr></thead>
+        <tbody>
+          <tr><td class="method-name scalar">Compression</td><td>4×</td><td>32×</td><td>16-256×</td><td>1.3-4×</td><td>8-64×</td></tr>
+          <tr><td class="method-name binary">Recall</td><td>~97%</td><td>~93% (768d)</td><td>~95-99%</td><td>~98-99.5%</td><td>~96-99%</td></tr>
+          <tr><td class="method-name pq">Speed</td><td>Same as float</td><td>Fastest (bit ops)</td><td>Fast (LUT)</td><td>Moderate</td><td>Moderate</td></tr>
+          <tr><td class="method-name rq">Complexity</td><td>Low</td><td>Lowest</td><td>High</td><td>Medium</td><td>High</td></tr>
+          <tr><td class="method-name aq">Best for</td><td>General purpose</td><td>Memory-constrained</td><td>Production scale</td><td>High accuracy</td><td>Research / best quality</td></tr>
+        </tbody>
+      </table>`;
+  }
+
+  const calcCounts = [10000, 100000, 1000000, 5000000, 10000000, 50000000, 100000000];
+  const calcDimsList = [384, 768, 1536];
+
+  function updateCalculator() {
+    const countIdx = +document.getElementById('calcCount').value;
+    const dimsIdx = +document.getElementById('calcDims').value;
+    const count = calcCounts[countIdx];
+    const dims = calcDimsList[dimsIdx];
+
+    document.getElementById('calcCountDisplay').textContent = count.toLocaleString();
+    document.getElementById('calcDimsDisplay').textContent = dims;
+
+    const origBytes = count * dims * 4;
+    const scalarBytes = origBytes / 4;
+    const binaryBytes = origBytes / 32;
+    const pqBytes = origBytes / 64;
+    const rqBytes = origBytes / 2;
+    const aqBytes = origBytes / 16;
+
+    function fmt(b) {
+      if (b >= 1e9) return (b / 1e9).toFixed(1) + ' GB';
+      if (b >= 1e6) return (b / 1e6).toFixed(1) + ' MB';
+      if (b >= 1e3) return (b / 1e3).toFixed(1) + ' KB';
+      return b + ' B';
+    }
+
+    const maxBytes = origBytes;
+    document.getElementById('calcBars').innerHTML = `
+      <div class="bar-row">
+        <span class="bar-label">Original</span>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#191919">${fmt(origBytes)}</div></div>
+        <span class="bar-val">1×</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Scalar 8-bit</span>
+        <div class="bar-track"><div class="bar-fill scalar" style="width:${(scalarBytes / maxBytes * 100).toFixed(1)}%">${fmt(scalarBytes)}</div></div>
+        <span class="bar-val">4×</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Binary 1-bit</span>
+        <div class="bar-track"><div class="bar-fill binary" style="width:${(binaryBytes / maxBytes * 100).toFixed(1)}%">${fmt(binaryBytes)}</div></div>
+        <span class="bar-val">32×</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Product Q.</span>
+        <div class="bar-track"><div class="bar-fill pq" style="width:${(pqBytes / maxBytes * 100).toFixed(1)}%">${fmt(pqBytes)}</div></div>
+        <span class="bar-val">64×</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Residual Q.</span>
+        <div class="bar-track"><div class="bar-fill rq" style="width:${(rqBytes / maxBytes * 100).toFixed(1)}%">${fmt(rqBytes)}</div></div>
+        <span class="bar-val">2×</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Additive Q.</span>
+        <div class="bar-track"><div class="bar-fill aq" style="width:${(aqBytes / maxBytes * 100).toFixed(1)}%">${fmt(aqBytes)}</div></div>
+        <span class="bar-val">16×</span>
+      </div>`;
+  }
+
+  /* ═══════════════════════════════════════════
+     DECISION TREE
+     ═══════════════════════════════════════════ */
+  let dtAnswers = {};
+
+  function initDecisionTree() {
+    dtAnswers = {};
+    renderDecisionTree();
+  }
+
+  function renderDecisionTree() {
+    const steps = [
+      {
+        key: 'priority',
+        question: '1. What\'s your top priority?',
+        options: ['Speed', 'Memory', 'Accuracy'],
+      },
+      {
+        key: 'scale',
+        question: '2. How many vectors?',
+        options: ['< 1M', '1-10M', '10M+'],
+      },
+      {
+        key: 'dims',
+        question: '3. Vector dimensions?',
+        options: ['< 256', '256-768', '768+'],
+      },
+      {
+        key: 'complexity',
+        question: '4. Engineering capacity?',
+        options: ['Keep it simple', 'I\'ll tune it'],
+      }
+    ];
+
+    let html = '';
+    steps.forEach((step, i) => {
+      const show = i === 0 || dtAnswers[steps[i - 1].key] !== undefined;
+      if (!show) return;
+      html += `<div class="dt-question">${step.question}</div>`;
+      html += '<div class="dt-options">';
+      step.options.forEach(opt => {
+        const sel = dtAnswers[step.key] === opt ? 'selected' : '';
+        html += `<button class="dt-opt ${sel}" onclick="dtSelect('${step.key}','${opt}')">${opt}</button>`;
+      });
+      html += '</div>';
+    });
+
+    if (Object.keys(dtAnswers).length === 4) {
+      const rec = getRecommendation();
+      html += `<div class="dt-result">${rec}</div>`;
+    }
+
+    document.getElementById('decisionTree').innerHTML = html;
+  }
+
+  function dtSelect(key, val) {
+    dtAnswers[key] = val;
+    renderDecisionTree();
+  }
+
+  function getRecommendation() {
+    const { priority, scale, dims, complexity } = dtAnswers;
+    let rec = '', reason = '';
+
+    if (priority === 'Accuracy' || complexity === 'I\'ll tune it') {
+      if (dims === '768+' && scale === '10M+') {
+        rec = 'Product Quantization';
+        reason = 'PQ gives the best balance of compression and accuracy at massive scale. With 768+ dims and 10M+ vectors, PQ\'s codebook approach shines.';
+      } else if (priority === 'Accuracy') {
+        rec = 'Residual Quantization';
+        reason = 'RQ\'s iterative refinement gives the highest recall (~98-99.5%). Each stage corrects the previous error, progressively improving accuracy.';
+      } else {
+        rec = 'Additive Quantization';
+        reason = 'AQ\'s cooperating codebooks give the most expressive representation. Best for research settings where quality matters most.';
+      }
+    } else if (priority === 'Memory') {
+      if (dims === '768+') {
+        rec = 'Binary Quantization';
+        reason = 'With 768+ dimensions, binary quantization gives 32× compression with ~93% recall. The law of large numbers preserves direction well.';
+      } else {
+        rec = 'Product Quantization';
+        reason = 'For lower dimensions, PQ gives better accuracy than binary while still achieving 16-64× compression.';
+      }
+    } else {
+      rec = 'Scalar Quantization (8-bit)';
+      reason = 'The safest default. 4× compression with ~97% recall and zero complexity. Works well regardless of dimension count or scale.';
+    }
+
+    return `<strong>Recommendation: ${rec}</strong><br><br>${reason}<br><br>
+      <span style="font-size:0.78rem;color:#6B6B6B">
+      Your answers: Priority=${priority}, Scale=${scale}, Dims=${dims}, Complexity=${complexity}
+      </span>`;
+  }
+
+  /* ═══════════════════════════════════════════
+     REAL-WORLD USAGE
+     ═══════════════════════════════════════════ */
+  function renderRealWorld() {
+    const dbs = [
+      { name: 'Qdrant', methods: 'Binary + Scalar + PQ', color: '#3b6fd4' },
+      { name: 'Milvus', methods: 'Scalar + PQ + RQ', color: '#2e7d52' },
+      { name: 'Weaviate', methods: 'Binary + PQ', color: '#7c3aed' },
+      { name: 'Pinecone', methods: 'Scalar + PQ', color: '#d97706' },
+      { name: 'Faiss', methods: 'All methods (research reference)', color: '#e11d48' },
+    ];
+    document.getElementById('realWorld').innerHTML = dbs.map(db => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f0f0ef">
+        <div style="width:8px;height:8px;border-radius:50%;background:${db.color};flex-shrink:0"></div>
+        <div style="font-size:0.84rem;font-weight:600;min-width:80px">${db.name}</div>
+        <div style="font-size:0.82rem;color:#6B6B6B">${db.methods}</div>
+      </div>
+    `).join('');
+  }
+
+  /* ═══════════════════════════════════════════
+     INIT
+     ═══════════════════════════════════════════ */
+  updateTradeoff();
+</script>
+</body>
+</html>
