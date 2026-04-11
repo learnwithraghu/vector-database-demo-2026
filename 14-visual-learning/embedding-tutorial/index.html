@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vector Embeddings · Meta Engineering</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* ─── Design Tokens (Meta / Facebook internal-tool aesthetic) ─── */
+    :root {
+      /* Surfaces */
+      --bg-base:        #18191a;
+      --bg-elevated:    #242526;
+      --bg-card:        #3a3b3c;
+      --bg-card-hover:  #4a4b4c;
+      --bg-input:       #3a3b3c;
+
+      /* Text */
+      --text-primary:   #e4e6eb;
+      --text-secondary: #b0b3b8;
+      --text-tertiary:  #8a8d91;
+      --text-inverse:   #ffffff;
+
+      /* Borders */
+      --border-subtle:  rgba(255,255,255,0.08);
+      --border-default: rgba(255,255,255,0.14);
+      --border-strong:  rgba(255,255,255,0.22);
+
+      /* Meta Blue — brand accent */
+      --blue-60:    #1877f2;
+      --blue-50:    #2d88ff;
+      --blue-40:    #77a7ff;
+      --blue-soft:  rgba(24,119,242,0.15);
+      --blue-glow:  rgba(24,119,242,0.30);
+
+      /* Semantic */
+      --green:      #31a24c;
+      --green-soft: rgba(49,162,76,0.15);
+      --red:        #fa3e3e;
+      --red-soft:   rgba(250,62,62,0.15);
+      --yellow:     #f7b928;
+
+      /* Category colours */
+      --animal:     #2d88ff;
+      --vehicle:    #fa3e3e;
+      --fruit:      #31a24c;
+      --concept:    #a855f7;
+
+      /* Radius */
+      --radius-sm:  6px;
+      --radius-md:  10px;
+      --radius-lg:  16px;
+      --radius-xl:  20px;
+      --radius-pill: 9999px;
+
+      /* Shadow */
+      --shadow-sm:  0 1px 3px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.4);
+      --shadow-md:  0 4px 12px rgba(0,0,0,0.5);
+      --shadow-lg:  0 8px 24px rgba(0,0,0,0.6);
+    }
+
+    /* ─── Reset & Base ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+      font-size: 14px;
+    }
+
+    /* ─── Layout Shell ─── */
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-rows: 52px 1fr 60px;
+    }
+
+    /* ─── Top Bar ─── */
+    .topbar {
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      gap: 16px;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      z-index: 10;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Meta "f" thumb logo */
+    .brand-mark {
+      width: 32px; height: 32px;
+      background: var(--blue-60);
+      border-radius: var(--radius-md);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+    }
+    .brand-mark svg {
+      width: 16px; height: 16px;
+      color: #fff;
+    }
+
+    .brand-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .brand-divider {
+      width: 1px; height: 20px;
+      background: var(--border-default);
+    }
+
+    .course-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    /* Progress Pill */
+    .progress-track {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .progress-segment {
+      height: 4px;
+      width: 40px;
+      border-radius: var(--radius-pill);
+      background: var(--bg-card);
+      transition: background 0.4s ease, width 0.4s ease;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-segment::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: var(--blue-60);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .progress-segment.completed::after { transform: scaleX(1); }
+    .progress-segment.active::after {
+      transform: scaleX(0.5);
+      background: linear-gradient(90deg, var(--blue-60), var(--blue-50));
+    }
+
+    .progress-counter {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      margin-left: 6px;
+      white-space: nowrap;
+    }
+
+    /* ─── Main Area ─── */
+    .main {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* ─── Sidebar ─── */
+    .sidebar {
+      background: var(--bg-elevated);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 20px;
+      gap: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--bg-card); border-radius: 4px; }
+
+    /* Chapter chip */
+    .chapter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      background: var(--blue-soft);
+      border: 1px solid rgba(24,119,242,0.3);
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--blue-40);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      width: fit-content;
+      margin-bottom: 18px;
+    }
+    .chapter-chip svg { width: 11px; height: 11px; }
+
+    /* Narrative */
+    .narrative h2 {
+      font-size: 19px;
+      font-weight: 700;
+      line-height: 1.3;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+
+    .narrative p {
+      font-size: 13.5px;
+      line-height: 1.65;
+      color: var(--text-secondary);
+      margin-bottom: 14px;
+    }
+
+    /* Key Concept card */
+    .key-card {
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--blue-60);
+      border-radius: var(--radius-md);
+      padding: 14px 14px 14px 16px;
+      margin: 16px 0;
+    }
+
+    .key-card-header {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--blue-40);
+      margin-bottom: 8px;
+    }
+    .key-card-header svg { width: 13px; height: 13px; }
+
+    .key-card p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+    }
+
+    .key-card strong { color: var(--text-primary); }
+
+    /* Action callout */
+    .action-callout {
+      margin-top: auto;
+      padding-top: 20px;
+    }
+
+    .action-inner {
+      background: var(--bg-base);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .action-inner::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--blue-60), var(--blue-50));
+      border-radius: var(--radius-pill);
+    }
+
+    .action-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--blue-40);
+      margin-bottom: 8px;
+    }
+    .action-header svg { width: 13px; height: 13px; }
+
+    .action-inner p {
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text-primary);
+      margin: 0;
+    }
+
+    /* ─── Stage Canvas ─── */
+    .stage-content {
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: var(--bg-base);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Subtle grid background */
+    .stage-content::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black 40%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .viz-panel {
+      width: 100%;
+      max-width: 660px;
+      aspect-ratio: 16/11;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    /* Panel top bar chrome */
+    .viz-panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 36px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border-subtle);
+      z-index: 1;
+    }
+
+    /* Traffic light dots */
+    .panel-chrome {
+      position: absolute;
+      top: 12px; left: 16px;
+      display: flex;
+      gap: 6px;
+      z-index: 2;
+    }
+    .chrome-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+    .chrome-dot.close  { background: #ff5f57; }
+    .chrome-dot.min    { background: #febc2e; }
+    .chrome-dot.expand { background: #28c840; }
+
+    .panel-tab {
+      position: absolute;
+      top: 9px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      z-index: 2;
+      letter-spacing: 0.01em;
+    }
+
+    /* ─── Animation Stage Wrapper ─── */
+    .anim-stage {
+      position: absolute;
+      inset: 0;
+      top: 36px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 32px;
+    }
+
+    .anim-stage.hidden { display: none; }
+
+    /* ─── Stage 1: Word Cards + Clusters ─── */
+    .word-cards {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .word-card {
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      opacity: 0;
+      transform: translateY(14px);
+      animation: fadeUp 0.5s ease forwards;
+      border: 1px solid transparent;
+    }
+
+    .word-card.animal  { background: rgba(45,136,255,0.12); border-color: rgba(45,136,255,0.35); color: var(--animal); }
+    .word-card.vehicle { background: rgba(250,62,62,0.12);  border-color: rgba(250,62,62,0.35);  color: var(--vehicle); }
+    .word-card.fruit   { background: rgba(49,162,76,0.12);  border-color: rgba(49,162,76,0.35);  color: var(--fruit); }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .cluster-viz {
+      position: relative;
+      width: 100%;
+      height: 210px;
+    }
+
+    .cluster {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cluster-bubble {
+      width: 110px; height: 110px;
+      border-radius: 50%;
+      position: relative;
+      opacity: 0;
+      transform: scale(0.75);
+      animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    }
+
+    .cluster-bubble.animals  { background: radial-gradient(circle, rgba(45,136,255,0.18), rgba(45,136,255,0.06)); border: 1.5px dashed rgba(45,136,255,0.45); }
+    .cluster-bubble.vehicles { background: radial-gradient(circle, rgba(250,62,62,0.18), rgba(250,62,62,0.06));  border: 1.5px dashed rgba(250,62,62,0.45); }
+    .cluster-bubble.fruits   { background: radial-gradient(circle, rgba(49,162,76,0.18), rgba(49,162,76,0.06));  border: 1.5px dashed rgba(49,162,76,0.45); }
+
+    @keyframes popIn {
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .cluster-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0;
+      animation: fadeIn 0.4s ease 1.1s forwards;
+    }
+    .cluster-label.animals  { color: var(--animal); }
+    .cluster-label.vehicles { color: var(--vehicle); }
+    .cluster-label.fruits   { color: var(--fruit); }
+
+    @keyframes fadeIn { to { opacity: 1; } }
+
+    .cluster-dot {
+      position: absolute;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      opacity: 0;
+      transform: scale(0);
+      animation: dotPop 0.3s ease forwards;
+    }
+    .cluster-dot.animal  { background: var(--animal);  box-shadow: 0 0 6px rgba(45,136,255,0.6); }
+    .cluster-dot.vehicle { background: var(--vehicle); box-shadow: 0 0 6px rgba(250,62,62,0.6); }
+    .cluster-dot.fruit   { background: var(--fruit);   box-shadow: 0 0 6px rgba(49,162,76,0.6); }
+
+    @keyframes dotPop { to { opacity: 1; transform: scale(1); } }
+
+    /* ─── Stage 2: Interactive Points ─── */
+    .i-point {
+      position: absolute;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      border: 2px solid transparent;
+      user-select: none;
+      letter-spacing: 0.01em;
+    }
+
+    .i-point:hover         { transform: translate(-50%,-50%) scale(1.12); }
+    .i-point.selected      { transform: translate(-50%,-50%) scale(1.2) !important; }
+
+    .i-point.animal  { background: rgba(45,136,255,0.18);  color: var(--animal);  border-color: rgba(45,136,255,0.55); }
+    .i-point.vehicle { background: rgba(250,62,62,0.18);   color: var(--vehicle); border-color: rgba(250,62,62,0.55); }
+    .i-point.fruit   { background: rgba(49,162,76,0.18);   color: var(--fruit);   border-color: rgba(49,162,76,0.55); }
+
+    .i-point.animal.selected  { box-shadow: 0 0 16px rgba(45,136,255,0.5); }
+    .i-point.vehicle.selected { box-shadow: 0 0 16px rgba(250,62,62,0.5); }
+    .i-point.fruit.selected   { box-shadow: 0 0 16px rgba(49,162,76,0.5); }
+
+    /* Similarity Line */
+    .sim-svg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .sim-svg line {
+      stroke-width: 2.4px;
+      stroke-linecap: round;
+      opacity: 0;
+      animation: lineFade 0.35s ease forwards;
+    }
+
+    .sim-svg path.arc {
+      fill: none;
+      stroke-width: 1.5px;
+      stroke-dasharray: 4 4;
+      opacity: 0;
+      animation: lineFade 0.4s ease 0.1s forwards;
+    }
+
+    @keyframes lineFade { to { opacity: 0.85; } }
+
+    .sim-badge {
+      position: absolute;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      animation: fadeIn 0.3s ease 0.3s forwards;
+      pointer-events: none;
+    }
+
+    .sim-badge.high { background: var(--green-soft); border: 1px solid rgba(49,162,76,0.4); color: var(--green); }
+    .sim-badge.low  { background: var(--red-soft);   border: 1px solid rgba(250,62,62,0.4);  color: var(--red); }
+
+    /* ─── Stage 4: Quiz ─── */
+    .quiz-wrap {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .quiz-q {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.45;
+      color: var(--text-primary);
+      text-align: center;
+      margin-bottom: 20px;
+      letter-spacing: -0.01em;
+    }
+
+    .quiz-opts { display: grid; gap: 10px; }
+
+    .quiz-opt {
+      padding: 13px 16px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13.5px;
+      color: var(--text-primary);
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      user-select: none;
+    }
+
+    .quiz-opt:hover:not(.disabled) {
+      background: var(--bg-card);
+      border-color: var(--blue-60);
+      transform: translateX(3px);
+    }
+
+    .quiz-opt.correct {
+      background: var(--green-soft);
+      border-color: rgba(49,162,76,0.5);
+      color: var(--green);
+    }
+
+    .quiz-opt.wrong {
+      background: var(--red-soft);
+      border-color: rgba(250,62,62,0.4);
+      color: var(--red);
+    }
+
+    .opt-letter {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .quiz-feedback {
+      margin-top: 14px;
+      padding: 13px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      line-height: 1.55;
+      opacity: 0;
+      transform: translateY(-6px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .quiz-feedback.show { opacity: 1; transform: translateY(0); }
+    .quiz-feedback.correct { background: var(--green-soft); border: 1px solid rgba(49,162,76,0.4); color: #5ac975; }
+    .quiz-feedback.wrong   { background: var(--red-soft);   border: 1px solid rgba(250,62,62,0.4);  color: #fc7272; }
+
+    /* ─── Completion ─── */
+    .completion {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .completion-ring {
+      width: 76px; height: 76px;
+      border-radius: 50%;
+      background: conic-gradient(var(--blue-60) 360deg, transparent 0);
+      display: grid;
+      place-items: center;
+      margin-bottom: 20px;
+      animation: ringPop 0.6s cubic-bezier(0.34,1.56,0.64,1);
+      box-shadow: 0 0 24px var(--blue-glow);
+      position: relative;
+    }
+    .completion-ring::before {
+      content: '';
+      position: absolute;
+      inset: 3px;
+      border-radius: 50%;
+      background: var(--bg-elevated);
+    }
+    .completion-ring svg {
+      position: relative; z-index: 1;
+      color: var(--blue-50);
+    }
+
+    @keyframes ringPop {
+      0%   { transform: scale(0) rotate(-180deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+
+    .completion h3 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .completion .sub {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+
+    .learned-card {
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      text-align: left;
+      width: 100%;
+    }
+
+    .learned-card .title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 12px;
+    }
+
+    .learned-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+    .learned-item:last-child { border-bottom: none; }
+
+    .learned-check {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--green-soft);
+      border: 1px solid rgba(49,162,76,0.4);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .learned-check svg { width: 10px; height: 10px; color: var(--green); }
+
+    /* ─── Bottom Nav ─── */
+    .navbar {
+      background: var(--bg-elevated);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      box-shadow: 0 -1px 0 rgba(0,0,0,0.3);
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 18px;
+      border-radius: var(--radius-md);
+      font-size: 13.5px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s, transform 0.1s;
+      border: 1px solid var(--border-default);
+      background: var(--bg-card);
+      color: var(--text-primary);
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg-card-hover);
+      border-color: var(--border-strong);
+      transform: translateY(-1px);
+    }
+
+    .nav-btn:active:not(:disabled) { transform: translateY(0); }
+
+    .nav-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .nav-btn svg { width: 15px; height: 15px; }
+
+    .nav-btn.primary {
+      background: var(--blue-60);
+      border-color: var(--blue-60);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(24,119,242,0.35);
+    }
+
+    .nav-btn.primary:hover:not(:disabled) {
+      background: #1466d8;
+      border-color: #1466d8;
+      box-shadow: 0 4px 14px rgba(24,119,242,0.45);
+    }
+
+    .nav-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .step-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .step-dots {
+      display: flex;
+      gap: 5px;
+    }
+
+    .step-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      transition: all 0.3s ease;
+    }
+
+    .step-dot.done    { background: rgba(24,119,242,0.45); }
+    .step-dot.current { background: var(--blue-60); box-shadow: 0 0 6px var(--blue-glow); width: 16px; border-radius: 3px; }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 860px) {
+      .main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+      .sidebar { border-right: none; border-bottom: 1px solid var(--border-subtle); padding: 16px; max-height: 240px; }
+      .narrative h2 { font-size: 16px; }
+      .viz-panel { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Top Bar ── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="brand-mark">
+        <i data-lucide="network" style="width:16px;height:16px;color:#fff;"></i>
+      </div>
+      <span class="brand-name">Meta Engineering</span>
+      <div class="brand-divider"></div>
+      <span class="course-title">Vector Embeddings · Interactive Course</span>
+    </div>
+
+    <div class="progress-track">
+      <div class="progress-segment active" id="seg0"></div>
+      <div class="progress-segment" id="seg1"></div>
+      <span class="progress-counter" id="progressCounter">1 / 3</span>
+    </div>
+  </header>
+
+  <!-- ── Main ── -->
+  <main class="main">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="chapter-chip">
+        <i data-lucide="book-open"></i>
+        <span id="chapterLabel">Chapter 1 of 4</span>
+      </div>
+
+      <div class="narrative" id="narrative">
+        <!-- Injected by JS -->
+      </div>
+
+      <div class="action-callout">
+        <div class="action-inner">
+          <div class="action-header">
+            <i data-lucide="mouse-pointer-click"></i>
+            Your Turn
+          </div>
+          <p id="actionText"></p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Stage Canvas -->
+    <section class="stage-content">
+      <div class="viz-panel" id="vizPanel">
+        <div class="panel-chrome">
+          <div class="chrome-dot close"></div>
+          <div class="chrome-dot min"></div>
+          <div class="chrome-dot expand"></div>
+        </div>
+        <div class="panel-tab" id="panelTab">embeddings.space</div>
+
+        <!-- Stage 1 -->
+        <div class="anim-stage" id="stage1">
+          <div class="word-cards" id="wordCards">
+            <div class="word-card animal"  style="animation-delay:.08s">Cat</div>
+            <div class="word-card animal"  style="animation-delay:.16s">Dog</div>
+            <div class="word-card vehicle" style="animation-delay:.24s">Car</div>
+            <div class="word-card vehicle" style="animation-delay:.32s">Bus</div>
+            <div class="word-card fruit"   style="animation-delay:.40s">Apple</div>
+            <div class="word-card fruit"   style="animation-delay:.48s">Banana</div>
+          </div>
+          <div class="cluster-viz" id="clusterViz"></div>
+        </div>
+
+        <!-- Stage 2 -->
+        <div class="anim-stage hidden" id="stage2">
+          <div class="cluster-viz" id="similarityViz" style="height:100%;width:100%;"></div>
+        </div>
+
+        <!-- Stage 3 (Quiz) -->
+        <div class="anim-stage hidden" id="stage3">
+          <div class="quiz-wrap" id="quizContainer"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── Bottom Nav ── -->
+  <nav class="navbar">
+    <button class="nav-btn" id="prevBtn" disabled>
+      <i data-lucide="arrow-left"></i>
+      Back
+    </button>
+
+    <div class="nav-center">
+      <span class="step-label" id="stepLabel">Step 1 of 3</span>
+      <div class="step-dots" id="stepDots">
+        <div class="step-dot current"></div>
+        <div class="step-dot"></div>
+      </div>
+    </div>
+
+    <button class="nav-btn primary" id="nextBtn">
+      Continue
+      <i data-lucide="arrow-right"></i>
+    </button>
+  </nav>
+
+</div>
+
+<script>
+lucide.createIcons();
+
+/* ── State ── */
+const S = {
+  stage: 1,
+  total: 3,
+  s2done: false,
+  quizDone: false,
+  selected: [],
+  quizIdx: 0
+};
+
+/* ── Stage Metadata ── */
+const STAGES = {
+  1: {
+    title: "Welcome to Embedding Space",
+    body: `
+      <p>Imagine a magical map where words with similar meanings live near each other — like how restaurants cluster on the same street. That map is <strong>embedding space</strong>.</p>
+      <div class="key-card">
+        <div class="key-card-header"><i data-lucide="lightbulb"></i> Key Concept</div>
+        <p><strong>Embeddings</strong> convert words into numeric coordinates. Similar words end up geometrically close together in this high-dimensional space.</p>
+      </div>
+    `,
+    action: "Watch the clusters form — then click Continue to explore similarity.",
+    tab: "embeddings.space · cluster view"
+  },
+  2: {
+    title: "Distance Encodes Meaning",
+    body: `
+      <p>In embedding space, <em>proximity equals similarity</em>. Words that share meaning have vectors pointing in nearly the same direction.</p>
+      <div class="key-card">
+        <div class="key-card-header"><i data-lucide="move-diagonal"></i> Cosine Similarity</div>
+        <p>We measure the <strong>angle</strong> between two vectors — not raw distance. A small angle means high similarity; a large angle means low similarity.</p>
+      </div>
+    `,
+    action: "Click two words to measure their similarity. Try Cat + Dog (high) then Cat + Car (low).",
+    tab: "embeddings.space · similarity probe"
+  },
+  3: {
+    title: "Why It Matters",
+    body: `
+      <p>Vector databases index embeddings so you can search by <em>meaning</em>, not keywords. Ask "something cozy to drink on a cold night" and get "hot chocolate" — even when those exact words never appear.</p>
+      <div class="key-card">
+        <div class="key-card-header"><i data-lucide="database"></i> Real-World Use</div>
+        <p>Search engines, recommendation feeds, LLM retrieval-augmented generation (RAG), and moderation systems all rely on embeddings under the hood.</p>
+      </div>
+    `,
+    action: "Answer three quick questions to lock in what you've learned.",
+    tab: "embeddings.space · knowledge check"
+  }
+};
+
+const QUIZ = [
+  {
+    q: "In embedding space, what does it mean when two words are geometrically close?",
+    opts: [
+      { l:"A", t:"They have similar meanings",      ok: true  },
+      { l:"B", t:"They start with the same letter", ok: false },
+      { l:"C", t:"They have the same word length",  ok: false },
+      { l:"D", t:"They rhyme",                      ok: false }
+    ],
+    exp: "Embeddings encode semantic meaning — similar concepts cluster in the same region of vector space."
+  },
+  {
+    q: "Cosine similarity measures…",
+    opts: [
+      { l:"A", t:"The angle between vectors", ok: true  },
+      { l:"B", t:"The number of shared letters", ok: false },
+      { l:"C", t:"The average word length", ok: false },
+      { l:"D", t:"How often words co-occur", ok: false }
+    ],
+    exp: "Cosine similarity looks at the angle between vectors. Smaller angles mean higher semantic alignment."
+  },
+  {
+    q: "What is the primary advantage of semantic / vector search?",
+    opts: [
+      { l:"A", t:"Stores more data",                      ok: false },
+      { l:"B", t:"Finds conceptually similar results",    ok: true  },
+      { l:"C", t:"Compresses file sizes",                 ok: false },
+      { l:"D", t:"Encrypts search queries",               ok: false }
+    ],
+    exp: "Vector search retrieves results by meaning, not exact keyword matches — enabling far more natural queries."
+  }
+];
+
+/* ── DOM refs ── */
+const $ = id => document.getElementById(id);
+const el = {
+  chapterLabel: $('chapterLabel'),
+  narrative:    $('narrative'),
+  actionText:   $('actionText'),
+  prevBtn:      $('prevBtn'),
+  nextBtn:      $('nextBtn'),
+  stepLabel:    $('stepLabel'),
+  stepDots:     $('stepDots'),
+  panelTab:     $('panelTab'),
+  progressCounter: $('progressCounter'),
+  stages: { 1:$('stage1'), 2:$('stage2'), 3:$('stage3') }
+};
+
+/* ── Progress bar ── */
+function updateProgress(n) {
+  for (let i = 0; i < 3; i++) {
+    const seg = $(`seg${i}`);
+    seg.classList.remove('active','completed');
+    if (i < n - 1) seg.classList.add('completed');
+    if (i === n - 1) seg.classList.add('active');
+  }
+  el.progressCounter.textContent = `${n} / 3`;
+}
+
+/* ── Step dots ── */
+function updateDots(n) {
+  const dots = el.stepDots.querySelectorAll('.step-dot');
+  dots.forEach((d,i) => {
+    d.classList.remove('current','done');
+    if (i < n - 1) d.classList.add('done');
+    if (i === n - 1) d.classList.add('current');
+  });
+}
+
+/* ── Stage 1 ── */
+function initS1() {
+  const viz = $('clusterViz');
+  viz.innerHTML = '';
+  const clusters = [
+    { cls:'animals',  label:'Animals',  left:'12%', top:'5%',  color:'animal',  n:5 },
+    { cls:'vehicles', label:'Vehicles', left:'62%', top:'5%',  color:'vehicle', n:4 },
+    { cls:'fruits',   label:'Fruits',   left:'37%', top:'55%', color:'fruit',   n:5 }
+  ];
+  clusters.forEach((c, ci) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'cluster';
+    wrap.style.cssText = `left:${c.left};top:${c.top};`;
+
+    const bubble = document.createElement('div');
+    bubble.className = `cluster-bubble ${c.cls}`;
+    bubble.style.animationDelay = `${0.7 + ci * 0.15}s`;
+
+    for (let j = 0; j < c.n; j++) {
+      const d = document.createElement('div');
+      d.className = `cluster-dot ${c.color}`;
+      const angle = (j / c.n) * Math.PI * 2;
+      const r = 22 + Math.random() * 18;
+      d.style.cssText = `left:${50 + Math.cos(angle)*r - 4}px;top:${50 + Math.sin(angle)*r - 4}px;animation-delay:${1.4 + ci*0.2 + j*0.08}s;`;
+      bubble.appendChild(d);
+    }
+
+    const lbl = document.createElement('div');
+    lbl.className = `cluster-label ${c.cls}`;
+    lbl.textContent = c.label;
+    lbl.style.animationDelay = `${1.1 + ci * 0.15}s`;
+
+    wrap.appendChild(bubble);
+    wrap.appendChild(lbl);
+    viz.appendChild(wrap);
+  });
+}
+
+/* ── Stage 2 ── */
+const POINTS = [
+  { word:'Cat',    type:'animal',  x:22, y:28 },
+  { word:'Dog',    type:'animal',  x:32, y:38 },
+  { word:'Lion',   type:'animal',  x:18, y:52 },
+  { word:'Car',    type:'vehicle', x:72, y:22 },
+  { word:'Bus',    type:'vehicle', x:78, y:40 },
+  { word:'Apple',  type:'fruit',   x:50, y:72 },
+  { word:'Banana', type:'fruit',   x:63, y:65 }
+];
+
+function initS2() {
+  const viz = $('similarityViz');
+  viz.innerHTML = '';
+  S.selected = [];
+  window._s2 = { same:false, diff:false };
+
+  POINTS.forEach(p => {
+    const el = document.createElement('div');
+    el.className = `i-point ${p.type}`;
+    el.textContent = p.word;
+    el.style.cssText = `left:${p.x}%;top:${p.y}%;transform:translate(-50%,-50%);`;
+    el.dataset.type = p.type;
+    el.dataset.word = p.word;
+    el.addEventListener('click', () => handlePick(el));
+    viz.appendChild(el);
+  });
+}
+
+function handlePick(pt) {
+  const viz = $('similarityViz');
+  if (S.selected.includes(pt)) {
+    pt.classList.remove('selected');
+    S.selected = S.selected.filter(p => p !== pt);
+    clearLines(); return;
+  }
+  if (S.selected.length >= 2) {
+    S.selected.forEach(p => p.classList.remove('selected'));
+    S.selected = [];
+    clearLines();
+  }
+  pt.classList.add('selected');
+  S.selected.push(pt);
+  if (S.selected.length === 2) drawSim();
+}
+
+function clearLines() {
+  document.querySelectorAll('.sim-svg,.sim-badge').forEach(n => n.remove());
+}
+
+function drawSim() {
+  const [a,b] = S.selected;
+  const viz = $('similarityViz');
+  clearLines();
+
+  const x1 = parseFloat(a.style.left), y1 = parseFloat(a.style.top);
+  const x2 = parseFloat(b.style.left), y2 = parseFloat(b.style.top);
+  const same = a.dataset.type === b.dataset.type;
+
+  // create svg layer
+  let svg = viz.querySelector('.sim-svg');
+  if (!svg) {
+    svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('class','sim-svg');
+    svg.setAttribute('width','100%');
+    svg.setAttribute('height','100%');
+    svg.setAttribute('viewBox','0 0 100 100');
+    viz.appendChild(svg);
+  }
+
+  const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+  line.setAttribute('x1', x1);
+  line.setAttribute('y1', y1);
+  line.setAttribute('x2', x2);
+  line.setAttribute('y2', y2);
+  line.setAttribute('stroke', same ? 'var(--green)' : 'var(--red)');
+  svg.appendChild(line);
+
+  // compute angle arc around center (50,50)
+  const center = { x: 50, y: 50 };
+  const v1 = { x: x1 - center.x, y: y1 - center.y };
+  const v2 = { x: x2 - center.x, y: y2 - center.y };
+  const dot = v1.x * v2.x + v1.y * v2.y;
+  const mag1 = Math.sqrt(v1.x**2 + v1.y**2);
+  const mag2 = Math.sqrt(v2.x**2 + v2.y**2);
+  const cos = dot / (mag1 * mag2);
+  const angleRad = Math.acos(Math.max(-1, Math.min(1, cos)));
+  const angleDeg = angleRad * (180 / Math.PI);
+
+  // create small arc near center to show angle
+  const arcRadius = 12;
+  const startAngle = Math.atan2(v1.y, v1.x);
+  const endAngleRaw = Math.atan2(v2.y, v2.x);
+
+  let endAngle = endAngleRaw;
+  while (endAngle < startAngle) endAngle += Math.PI * 2;
+  const sweep = endAngle - startAngle;
+  const useLongArc = sweep > Math.PI;
+
+  const arcStart = {
+    x: center.x + arcRadius * Math.cos(startAngle),
+    y: center.y + arcRadius * Math.sin(startAngle)
+  };
+  const arcEnd = {
+    x: center.x + arcRadius * Math.cos(endAngle),
+    y: center.y + arcRadius * Math.sin(endAngle)
+  };
+
+  const arcPath = document.createElementNS('http://www.w3.org/2000/svg','path');
+  const d = `M ${arcStart.x} ${arcStart.y} A ${arcRadius} ${arcRadius} 0 ${useLongArc ? 1 : 0} 1 ${arcEnd.x} ${arcEnd.y}`;
+  arcPath.setAttribute('d', d);
+  arcPath.setAttribute('class', 'arc');
+  arcPath.setAttribute('stroke', 'var(--blue-40)');
+  svg.appendChild(arcPath);
+
+  const badge = document.createElement('div');
+  badge.className = `sim-badge ${same?'high':'low'}`;
+  badge.style.cssText = `left:${(x1+x2)/2}%;top:${(y1+y2)/2}%;`;
+  badge.textContent = `${same ? '↑ High similarity' : '↓ Low similarity'} · θ ≈ ${angleDeg.toFixed(0)}°`;
+  viz.appendChild(badge);
+
+  if (!window._s2) window._s2 = {same:false,diff:false};
+  if (same)  window._s2.same = true;
+  else       window._s2.diff = true;
+
+  if (window._s2.same && window._s2.diff && !S.s2done) {
+    S.s2done = true;
+    $('actionText').textContent = "You've seen both high and low similarity. Click Continue!";
+    refreshNext();
+  }
+}
+
+/* ── Stage 3 ── */
+function initS3() {
+  // stage 3 is quiz init handled separately
+}
+
+/* ── Quiz ── */
+function initQuiz() {
+  S.quizIdx = 0;
+  renderQ(0);
+}
+
+function renderQ(idx) {
+  const c = $('quizContainer');
+  if (idx >= QUIZ.length) { showDone(); return; }
+  const q = QUIZ[idx];
+  c.innerHTML = `
+    <p class="quiz-q">${q.q}</p>
+    <div class="quiz-opts" id="opts"></div>
+    <div class="quiz-feedback" id="qfb"></div>
+  `;
+  q.opts.forEach(opt => {
+    const btn = document.createElement('div');
+    btn.className = 'quiz-opt';
+    btn.innerHTML = `<span class="opt-letter">${opt.l}</span><span>${opt.t}</span>`;
+    btn.addEventListener('click', () => answerQ(opt, q));
+    $('opts').appendChild(btn);
+  });
+  lucide.createIcons();
+}
+
+function answerQ(chosen, q) {
+  const opts = document.querySelectorAll('.quiz-opt');
+  const fb = $('qfb');
+  opts.forEach((btn, i) => {
+    btn.classList.add('disabled');
+    btn.style.pointerEvents = 'none';
+    if (q.opts[i].letter === chosen.letter) {
+      btn.classList.add(chosen.ok ? 'correct' : 'wrong');
+    } else if (q.opts[i].ok) {
+      btn.classList.add('correct');
+    }
+  });
+  fb.className = `quiz-feedback show ${chosen.ok ? 'correct':'wrong'}`;
+  fb.textContent = q.exp;
+
+  setTimeout(() => {
+    S.quizIdx++;
+    if (S.quizIdx >= QUIZ.length) {
+      S.quizDone = true;
+      refreshNext();
+    }
+    renderQ(S.quizIdx);
+  }, 2600);
+}
+
+function showDone() {
+  const c = $('quizContainer');
+  c.innerHTML = `
+    <div class="completion">
+      <div class="completion-ring">
+        <i data-lucide="award" style="width:32px;height:32px;"></i>
+      </div>
+      <h3>Module Complete 🎉</h3>
+      <p class="sub">You've mastered Vector Embeddings fundamentals</p>
+      <div class="learned-card">
+        <div class="title">What you learned</div>
+        ${['Embeddings map words to numeric coordinates in high-dimensional space',
+           'Proximity in that space encodes semantic similarity',
+           'Vector arithmetic reveals relational meaning (King − Man + Woman = Queen)',
+           'Vector databases power semantic search, RAG, and recommendations'
+          ].map(t => `
+          <div class="learned-item">
+            <div class="learned-check"><i data-lucide="check" style="width:10px;height:10px;"></i></div>
+            <span>${t}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+  `;
+  lucide.createIcons();
+  el.nextBtn.disabled = true;
+}
+
+/* ── Load Stage ── */
+function loadStage(n) {
+  Object.values(el.stages).forEach(s => s.classList.add('hidden'));
+  el.stages[n].classList.remove('hidden');
+
+  const data = STAGES[n];
+  el.chapterLabel.textContent = `Chapter ${n} of 3`;
+  el.narrative.innerHTML = `<h2>${data.title}</h2>${data.body}`;
+  el.actionText.textContent = data.action;
+  el.panelTab.textContent = data.tab;
+el.stepLabel.textContent = `Step ${n} of 3`;
+  updateProgress(n);
+  updateDots(n);
+
+  el.prevBtn.disabled = n === 1;
+
+  if (n === 1) setTimeout(initS1, 80);
+  if (n === 2) setTimeout(initS2, 80);
+  if (n === 3) setTimeout(initQuiz, 80);
+
+  refreshNext();
+  lucide.createIcons();
+}
+
+function refreshNext() {
+  const n = S.stage;
+  if (n === 2 && !S.s2done) { el.nextBtn.disabled = true;  return; }
+  if (n === 3) { el.nextBtn.disabled = true; return; }
+  el.nextBtn.disabled = false;
+}
+
+el.prevBtn.addEventListener('click', () => {
+  if (S.stage > 1) { S.stage--; loadStage(S.stage); }
+});
+
+el.nextBtn.addEventListener('click', () => {
+  if (S.stage < S.total) { S.stage++; loadStage(S.stage); }
+});
+
+loadStage(1);
+</script>
+</body>
+</html>

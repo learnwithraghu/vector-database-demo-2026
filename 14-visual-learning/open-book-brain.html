@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Open-Book Brain — Why AI Makes Things Up</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a12;
+      --surface: #12121f;
+      --surface2: #1a1a2e;
+      --accent: #7c6af7;
+      --accent2: #3de8b0;
+      --text: #e8e6f0;
+      --muted: #6b6880;
+      --danger: #f87171;
+      --success: #34d399;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 18px;
+    }
+
+    /* Stage Layout */
+    .stage {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 0 8vw;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .stage.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-40px);
+    }
+
+    .stage.enter {
+      animation: slideIn 0.5s ease forwards;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Typography */
+    .stage-headline {
+      font-family: 'Syne', sans-serif;
+      font-size: 48px;
+      font-weight: 700;
+      line-height: 1.1;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .concept-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 2.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      position: absolute;
+      top: 3rem;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .body-text {
+      font-size: 18px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+      max-width: 600px;
+    }
+
+    .helper-text {
+      font-size: 16px;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    /* Brain Animation */
+    .brain-container {
+      width: 140px; height: 140px;
+      margin-bottom: 3rem;
+      position: relative;
+    }
+
+    .brain {
+      width: 100%; height: 100%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 60% 40% 50% 60% / 50% 60% 40% 50%;
+      position: relative;
+      animation: brainMorph 3s ease-in-out infinite;
+      box-shadow: 0 0 80px rgba(124, 106, 247, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brain::before, .brain::after {
+      content: '';
+      position: absolute;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 50%;
+    }
+
+    .brain::before {
+      width: 45px; height: 45px;
+      top: 20px; left: 15px;
+    }
+
+    .brain::after {
+      width: 40px; height: 40px;
+      top: 25px; right: 15px;
+    }
+
+    .brain-icon {
+      font-size: 48px;
+      z-index: 10;
+      animation: iconMorph 3s ease-in-out infinite;
+    }
+
+    @keyframes brainMorph {
+      0%, 100% { border-radius: 60% 40% 50% 60% / 50% 60% 40% 50%; }
+      50% { border-radius: 40% 60% 60% 40% / 60% 40% 60% 40%; }
+    }
+
+    @keyframes iconMorph {
+      0%, 45% { opacity: 1; }
+      50%, 95% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    /* Buttons */
+    .cta-btn {
+      padding: 1rem 2.5rem;
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 999px;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.02em;
+      margin-top: 2rem;
+    }
+
+    .cta-btn:hover:not(:disabled) {
+      transform: scale(1.04);
+      box-shadow: 0 8px 30px rgba(124, 106, 247, 0.4);
+    }
+
+    .cta-btn:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
+
+    .next-btn {
+      position: fixed;
+      bottom: 2.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 1rem 2.5rem;
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 999px;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.02em;
+      z-index: 100;
+    }
+
+    .next-btn:hover:not(:disabled) {
+      transform: translateX(-50%) scale(1.04);
+      box-shadow: 0 8px 30px rgba(124, 106, 247, 0.4);
+    }
+
+    .next-btn:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+      transform: translateX(-50%);
+    }
+
+    /* Progress Dots */
+    .progress-dots {
+      display: flex;
+      gap: 12px;
+      position: fixed;
+      bottom: 6rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+    }
+
+    .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: all 0.3s ease;
+    }
+
+    .dot.active {
+      background: var(--accent);
+      transform: scale(1.3);
+    }
+
+    /* Stage 1: Chat UI */
+    .stage1-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .chat-bubble {
+      padding: 1.25rem 1.5rem;
+      border-radius: 16px;
+      font-size: 17px;
+      line-height: 1.5;
+      max-width: 100%;
+    }
+
+    .chat-bubble.user {
+      background: var(--surface2);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+
+    .chat-bubble.ai {
+      background: var(--surface);
+      border: 1px solid rgba(124, 106, 247, 0.3);
+      border-bottom-right-radius: 4px;
+      min-height: 100px;
+    }
+
+    .warning-banner {
+      background: rgba(248, 113, 113, 0.15);
+      border: 1px solid var(--danger);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      font-size: 16px;
+      color: var(--danger);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.5s ease;
+    }
+
+    .warning-banner.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .exam-illustration {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .exam-icon {
+      width: 180px;
+      height: 180px;
+      background: var(--surface);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 80px;
+      border: 2px solid var(--surface2);
+    }
+
+    .exam-label {
+      font-size: 16px;
+      color: var(--muted);
+      text-align: center;
+      font-style: italic;
+    }
+
+    .concept-line {
+      font-size: 16px;
+      color: var(--muted);
+      font-style: italic;
+      text-align: center;
+      margin-top: 2rem;
+      max-width: 700px;
+    }
+
+    /* Stage 2: Vault */
+    .vault-container {
+      position: relative;
+      width: 100%;
+      max-width: 700px;
+      height: 400px;
+      background: var(--surface);
+      border-radius: 24px;
+      border: 3px solid var(--surface2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .vault-container::before {
+      content: '🏛️';
+      position: absolute;
+      font-size: 60px;
+      opacity: 0.1;
+      top: 20px;
+      right: 30px;
+    }
+
+    .vault-glow {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(124, 106, 247, 0.2), transparent 70%);
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+
+    .vault-glow.active {
+      opacity: 1;
+    }
+
+    .chunks-fan {
+      display: flex;
+      gap: -20px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .chunk-card {
+      width: 200px;
+      background: var(--surface2);
+      border: 2px solid transparent;
+      border-radius: 12px;
+      padding: 1rem;
+      transform-origin: bottom center;
+      transition: all 0.4s ease;
+      position: relative;
+    }
+
+    .chunk-card:nth-child(1) { transform: rotate(-12deg) translateY(20px); z-index: 4; }
+    .chunk-card:nth-child(2) { transform: rotate(-4deg) translateY(5px); z-index: 3; }
+    .chunk-card:nth-child(3) { transform: rotate(4deg) translateY(5px); z-index: 2; }
+    .chunk-card:nth-child(4) { transform: rotate(12deg) translateY(20px); z-index: 1; }
+
+    .chunk-card.found {
+      transform: translateY(-30px) scale(1.1) rotate(0deg) !important;
+      border-color: var(--accent2);
+      box-shadow: 0 0 40px rgba(61, 232, 176, 0.4);
+      z-index: 100;
+    }
+
+    .chunk-card.dimmed {
+      opacity: 0.4;
+    }
+
+    .chunk-card .chunk-icon {
+      font-size: 20px;
+      margin-bottom: 0.5rem;
+    }
+
+    .chunk-card .chunk-text {
+      font-size: 15px;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .vault-line {
+      margin-top: 2rem;
+      font-size: 16px;
+      color: var(--muted);
+    }
+
+    .found-text {
+      margin-top: 1.5rem;
+      font-size: 18px;
+      color: var(--accent2);
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+
+    .found-text.visible {
+      opacity: 1;
+    }
+
+    /* Search pulse animation */
+    @keyframes searchPulse {
+      0% { transform: scale(1); opacity: 0.5; }
+      50% { transform: scale(1.02); opacity: 0.8; }
+      100% { transform: scale(1); opacity: 0.5; }
+    }
+
+    .searching .vault-glow {
+      animation: searchPulse 0.8s ease-in-out 3;
+    }
+
+    /* Stage 3: Handoff */
+    .handoff-container {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 2rem;
+      align-items: center;
+      width: 100%;
+      max-width: 1100px;
+      margin-top: 2rem;
+    }
+
+    .zone-left, .zone-right {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .zone-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .found-chunk-display {
+      background: var(--surface);
+      border: 2px solid var(--accent2);
+      border-radius: 16px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 320px;
+    }
+
+    .found-chunk-display .chunk-icon {
+      font-size: 24px;
+      margin-bottom: 0.75rem;
+    }
+
+    .found-chunk-display .chunk-content {
+      font-size: 17px;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .zone-label {
+      font-size: 15px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .arrow-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .arrow-label {
+      font-size: 14px;
+      color: var(--accent);
+      text-align: center;
+      max-width: 150px;
+      font-weight: 500;
+    }
+
+    .glowing-arrow {
+      font-size: 48px;
+      color: var(--accent);
+      opacity: 0.6;
+      animation: arrowPulse 2s ease-in-out infinite;
+      transition: all 0.4s;
+    }
+
+    @keyframes arrowPulse {
+      0%, 100% { opacity: 0.6; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
+
+    .glowing-arrow.flowing {
+      animation: arrowFlow 1s ease-in-out;
+      color: var(--accent2);
+    }
+
+    @keyframes arrowFlow {
+      0% { transform: translateX(0) scale(1); }
+      50% { transform: translateX(20px) scale(1.2); filter: brightness(1.5); }
+      100% { transform: translateX(0) scale(1); }
+    }
+
+    .ai-waiting {
+      width: 280px;
+      min-height: 120px;
+      background: var(--surface);
+      border: 2px solid var(--surface2);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      opacity: 0.5;
+      transition: all 0.5s;
+    }
+
+    .ai-waiting.awake {
+      opacity: 1;
+      border-color: var(--accent);
+      box-shadow: 0 0 40px rgba(124, 106, 247, 0.3);
+    }
+
+    .ai-response-box {
+      width: 280px;
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      border-radius: 16px;
+      padding: 1.25rem;
+      font-size: 16px;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .ai-response-box.visible {
+      display: block;
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .grounded-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      padding: 0.5rem 0.75rem;
+      background: rgba(52, 211, 153, 0.15);
+      border: 1px solid var(--success);
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .inject-btn {
+      padding: 0.875rem 2rem;
+      background: var(--accent2);
+      color: var(--bg);
+      border: none;
+      border-radius: 999px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .inject-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 25px rgba(61, 232, 176, 0.4);
+    }
+
+    .inject-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Stage 4: Pipeline */
+    .pipeline-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 3rem;
+      flex-wrap: wrap;
+    }
+
+    .pipeline-node {
+      background: var(--surface);
+      border: 2px solid var(--surface2);
+      border-radius: 12px;
+      padding: 1.25rem 1rem;
+      text-align: center;
+      min-width: 140px;
+      opacity: 0.3;
+      transition: all 0.5s ease;
+    }
+
+    .pipeline-node.visible {
+      opacity: 1;
+      border-color: var(--accent);
+      box-shadow: 0 0 30px rgba(124, 106, 247, 0.2);
+    }
+
+    .pipeline-icon {
+      font-size: 28px;
+      margin-bottom: 0.5rem;
+    }
+
+    .pipeline-label {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .pipeline-arrow {
+      font-size: 20px;
+      color: var(--muted);
+      opacity: 0.5;
+    }
+
+    .pipeline-line {
+      margin-top: 2rem;
+      font-size: 18px;
+      color: var(--muted);
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+
+    .pipeline-line.visible {
+      opacity: 1;
+    }
+
+    /* Stage 5: Recap */
+    .takeaway-grid {
+      display: flex;
+      gap: 2rem;
+      margin: 3rem 0;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .takeaway-card {
+      background: var(--surface);
+      border: 1px solid var(--surface2);
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      min-width: 280px;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .takeaway-card.visible {
+      animation: cardSlideIn 0.5s ease forwards;
+    }
+
+    .takeaway-card:nth-child(1) { animation-delay: 0s; }
+    .takeaway-card:nth-child(2) { animation-delay: 0.4s; }
+    .takeaway-card:nth-child(3) { animation-delay: 0.8s; }
+
+    @keyframes cardSlideIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .takeaway-icon {
+      font-size: 32px;
+    }
+
+    .takeaway-text {
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .closing-line {
+      font-size: 20px;
+      color: var(--muted);
+      font-style: italic;
+      text-align: center;
+      margin: 2rem 0;
+      max-width: 700px;
+      line-height: 1.5;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .secondary-btn {
+      padding: 1rem 2rem;
+      background: transparent;
+      color: var(--accent);
+      border: 2px solid var(--accent);
+      border-radius: 999px;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .secondary-btn:hover {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .stage1-container { grid-template-columns: 1fr; gap: 2rem; }
+      .handoff-container { grid-template-columns: 1fr; gap: 1.5rem; }
+      .zone-center { order: -1; }
+      .glowing-arrow { transform: rotate(90deg); }
+      .chunks-fan { flex-wrap: wrap; justify-content: center; }
+      .chunk-card { transform: none !important; }
+      .takeaway-grid { flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Stage 0: Hook -->
+  <section class="stage" id="stage-0">
+    <div class="brain-container">
+      <div class="brain">
+        <span class="brain-icon">❓</span>
+      </div>
+    </div>
+    <h1 class="stage-headline">The AI gave a confident answer.<br>It was completely wrong.</h1>
+    <p class="body-text">Here's why — and how the smartest AI systems fix it.</p>
+    <button class="cta-btn" onclick="goTo(1)">Show me what's wrong →</button>
+  </section>
+
+  <!-- Stage 1: The Closed-Book Problem -->
+  <section class="stage hidden" id="stage-1">
+    <div class="concept-label">The problem: AI answers from memory alone</div>
+    <div class="stage1-container">
+      <div class="chat-container">
+        <div class="chat-bubble user">
+          "What were Acme Corp's Q3 2024 results?"
+        </div>
+        <div class="chat-bubble ai" id="ai-response-1">
+          <span id="typewriter-1"></span>
+        </div>
+        <div class="warning-banner" id="warning-banner">
+          <span>⚠</span>
+          <span>This answer was invented. Acme Corp's real results were never in the AI's training data.</span>
+        </div>
+      </div>
+      <div class="exam-illustration">
+        <div class="exam-icon">📝</div>
+        <div class="exam-label">Closed-book exam. Smart student. Wrong answer.</div>
+      </div>
+    </div>
+    <p class="concept-line">AI models are frozen in time. They can't look things up. They fill gaps with confident guesses.</p>
+    <button class="next-btn" id="btn-1" disabled onclick="goTo(2)">Next →</button>
+    <div class="progress-dots">
+      <span class="dot"></span>
+      <span class="dot active"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+    </div>
+  </section>
+
+  <!-- Stage 2: The Knowledge Vault -->
+  <section class="stage hidden" id="stage-2">
+    <div class="concept-label">The fix: give the AI a vault of real documents</div>
+    <div class="vault-container" id="vault">
+      <div class="vault-glow" id="vault-glow"></div>
+      <div class="chunks-fan" id="chunks-fan">
+        <div class="chunk-card" data-chunk="A">
+          <div class="chunk-icon">📄</div>
+          <div class="chunk-text">Acme Corp Q3 2024: Revenue $4.2M, up 18% YoY. Operating margin improved to 14%.</div>
+        </div>
+        <div class="chunk-card" data-chunk="B">
+          <div class="chunk-icon">📄</div>
+          <div class="chunk-text">Acme Corp was founded in 1987 in Delaware by Thomas Reed.</div>
+        </div>
+        <div class="chunk-card" data-chunk="C">
+          <div class="chunk-icon">📄</div>
+          <div class="chunk-text">Industry Q3 trends: consumer electronics saw broad spending increases.</div>
+        </div>
+        <div class="chunk-card" data-chunk="D">
+          <div class="chunk-icon">📄</div>
+          <div class="chunk-text">Acme Corp CEO Maria Lopez joined from Stripe in 2021.</div>
+        </div>
+      </div>
+    </div>
+    <p class="vault-line">These are real documents. Chunked. Stored. Ready to be searched.</p>
+    <p class="found-text" id="found-text">Most relevant chunk found.</p>
+    <button class="cta-btn" id="search-btn" onclick="searchVault()">Search the vault →</button>
+    <button class="next-btn hidden" id="btn-2" disabled onclick="goTo(3)">Next →</button>
+    <div class="progress-dots">
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot active"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+    </div>
+  </section>
+
+  <!-- Stage 3: The Handoff -->
+  <section class="stage hidden" id="stage-3">
+    <div class="concept-label">Now: hand the AI the right page</div>
+    <div class="handoff-container">
+      <div class="zone-left">
+        <div class="found-chunk-display">
+          <div class="chunk-icon">📄 Chunk A</div>
+          <div class="chunk-content">"Acme Corp Q3 2024: Revenue $4.2M, up 18% YoY. Operating margin improved to 14%."</div>
+        </div>
+        <div class="zone-label">The right context</div>
+      </div>
+      <div class="zone-center">
+        <div class="arrow-container">
+          <div class="arrow-label">You are injecting this into the AI's prompt</div>
+          <div class="glowing-arrow" id="glowing-arrow">→</div>
+        </div>
+        <button class="inject-btn" id="inject-btn" onclick="injectContext()">Inject context →</button>
+      </div>
+      <div class="zone-right">
+        <div class="ai-waiting" id="ai-waiting">
+          <span>💤</span>
+        </div>
+        <div class="ai-response-box" id="ai-response-box">
+          <span id="typewriter-3"></span>
+          <div class="grounded-badge">✓ Grounded. Every fact traced to the source.</div>
+        </div>
+        <div class="zone-label" id="ai-label">AI (waiting)</div>
+      </div>
+    </div>
+    <button class="next-btn" id="btn-3" disabled onclick="goTo(4)">Next →</button>
+    <div class="progress-dots">
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot active"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+    </div>
+  </section>
+
+  <!-- Stage 4: What Just Happened -->
+  <section class="stage hidden" id="stage-4">
+    <div class="concept-label">What you just did has a name: RAG<br>Retrieval-Augmented Generation</div>
+    <div class="pipeline-container">
+      <div class="pipeline-node" id="node-0">
+        <div class="pipeline-icon">❓</div>
+        <div class="pipeline-label">You asked</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-node" id="node-1">
+        <div class="pipeline-icon">🔍</div>
+        <div class="pipeline-label">Vector DB searched</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-node" id="node-2">
+        <div class="pipeline-icon">📄</div>
+        <div class="pipeline-label">Most relevant found</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-node" id="node-3">
+        <div class="pipeline-icon">💉</div>
+        <div class="pipeline-label">Context injected</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-node" id="node-4">
+        <div class="pipeline-icon">✨</div>
+        <div class="pipeline-label">Grounded answer</div>
+      </div>
+    </div>
+    <p class="pipeline-line" id="pipeline-line">Every time you use a smart AI assistant — this pipeline runs in milliseconds.</p>
+    <button class="next-btn" id="btn-4" disabled onclick="goTo(5)">Next →</button>
+    <div class="progress-dots">
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot active"></span>
+      <span class="dot"></span>
+    </div>
+  </section>
+
+  <!-- Stage 5: Recap -->
+  <section class="stage hidden" id="stage-5">
+    <h1 class="stage-headline">You just taught an AI to stop guessing.</h1>
+    <div class="takeaway-grid">
+      <div class="takeaway-card" id="card-0">
+        <div class="takeaway-icon">🧠</div>
+        <div class="takeaway-text">AI answers from memory — memory has gaps</div>
+      </div>
+      <div class="takeaway-card" id="card-1">
+        <div class="takeaway-icon">🔍</div>
+        <div class="takeaway-text">A vector DB finds the right document, fast</div>
+      </div>
+      <div class="takeaway-card" id="card-2">
+        <div class="takeaway-icon">📄</div>
+        <div class="takeaway-text">The right context in = the right answer out</div>
+      </div>
+    </div>
+    <p class="closing-line">"Every AI assistant you've used today — Perplexity, ChatGPT plugins, Copilot — has this architecture underneath."</p>
+    <div class="button-group">
+      <button class="restart-btn cta-btn" onclick="restart()">Explore Again ↺</button>
+      <button class="secondary-btn" onclick="explainVectorDB()">What's a vector DB?</button>
+    </div>
+    <div class="progress-dots">
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot active"></span>
+    </div>
+  </section>
+
+  <script>
+    // State
+    let currentStage = 0;
+    const totalStages = 6;
+    const typewriterText1 = "Acme Corp had a strong Q3 2024, reporting revenues of $6.1M with 22% year-over-year growth, driven by their new enterprise product line...";
+    const typewriterText3 = "Based on the provided document: Acme Corp reported Q3 2024 revenue of $4.2M, an 18% increase year-over-year, with operating margins reaching 14%.";
+    let searchCompleted = false;
+    let injectCompleted = false;
+    let activeTimers = [];
+
+    // Navigation
+    function goTo(index) {
+      if (index < 0 || index >= totalStages) return;
+      
+      // Clear any active timers
+      activeTimers.forEach(timer => clearTimeout(timer));
+      activeTimers = [];
+      
+      // Hide current stage
+      document.getElementById(`stage-${currentStage}`).classList.add('hidden');
+      document.getElementById(`stage-${currentStage}`).classList.remove('enter');
+      
+      // Show new stage
+      const newStage = document.getElementById(`stage-${index}`);
+      newStage.classList.remove('hidden');
+      newStage.classList.add('enter');
+      
+      currentStage = index;
+      updateDots();
+      
+      // Stage-specific initialization
+      if (index === 1) initStage1();
+      if (index === 2) initStage2();
+      if (index === 3) initStage3();
+      if (index === 4) initStage4();
+      if (index === 5) initStage5();
+    }
+
+    function next() {
+      goTo(currentStage + 1);
+    }
+
+    function restart() {
+      searchCompleted = false;
+      injectCompleted = false;
+      goTo(0);
+    }
+
+    function updateDots() {
+      document.querySelectorAll('.progress-dots').forEach(dotsContainer => {
+        const dots = dotsContainer.querySelectorAll('.dot');
+        dots.forEach((dot, i) => {
+          dot.classList.toggle('active', i === currentStage);
+        });
+      });
+    }
+
+    // Typewriter Effect
+    function typewriter(element, text, speed = 30, callback) {
+      element.innerHTML = '';
+      let i = 0;
+      function type() {
+        if (i < text.length) {
+          element.innerHTML += text.charAt(i);
+          i++;
+          const timer = setTimeout(type, speed);
+          activeTimers.push(timer);
+        } else if (callback) {
+          callback();
+        }
+      }
+      type();
+    }
+
+    // Stage 1: Closed-Book Problem
+    function initStage1() {
+      const el = document.getElementById('typewriter-1');
+      const banner = document.getElementById('warning-banner');
+      const btn = document.getElementById('btn-1');
+      
+      btn.disabled = true;
+      banner.classList.remove('visible');
+      
+      const timer1 = setTimeout(() => {
+        typewriter(el, typewriterText1, 20, () => {
+          const timer2 = setTimeout(() => {
+            banner.classList.add('visible');
+            const timer3 = setTimeout(() => {
+              btn.disabled = false;
+            }, 500);
+            activeTimers.push(timer3);
+          }, 500);
+          activeTimers.push(timer2);
+        });
+      }, 1000);
+      activeTimers.push(timer1);
+    }
+
+    // Stage 2: Knowledge Vault
+    function initStage2() {
+      searchCompleted = false;
+      const vault = document.getElementById('vault');
+      const glow = document.getElementById('vault-glow');
+      const foundText = document.getElementById('found-text');
+      const searchBtn = document.getElementById('search-btn');
+      const nextBtn = document.getElementById('btn-2');
+      const chunks = document.querySelectorAll('.chunk-card');
+      
+      vault.classList.remove('searching');
+      glow.classList.remove('active');
+      foundText.classList.remove('visible');
+      searchBtn.style.display = 'block';
+      searchBtn.disabled = false;
+      nextBtn.classList.add('hidden');
+      nextBtn.disabled = true;
+      
+      chunks.forEach(chunk => {
+        chunk.classList.remove('found', 'dimmed');
+      });
+    }
+
+    function searchVault() {
+      if (searchCompleted) return;
+      searchCompleted = true;
+      
+      const vault = document.getElementById('vault');
+      const glow = document.getElementById('vault-glow');
+      const foundText = document.getElementById('found-text');
+      const searchBtn = document.getElementById('search-btn');
+      const nextBtn = document.getElementById('btn-2');
+      const chunkA = document.querySelector('[data-chunk="A"]');
+      const otherChunks = document.querySelectorAll('.chunk-card:not([data-chunk="A"])');
+      
+      searchBtn.disabled = true;
+      vault.classList.add('searching');
+      glow.classList.add('active');
+      
+      const timer = setTimeout(() => {
+        vault.classList.remove('searching');
+        chunkA.classList.add('found');
+        otherChunks.forEach(c => c.classList.add('dimmed'));
+        foundText.classList.add('visible');
+        
+        const timer2 = setTimeout(() => {
+          searchBtn.style.display = 'none';
+          nextBtn.classList.remove('hidden');
+          nextBtn.disabled = false;
+        }, 800);
+        activeTimers.push(timer2);
+      }, 2400);
+      activeTimers.push(timer);
+    }
+
+    // Stage 3: Handoff
+    function initStage3() {
+      injectCompleted = false;
+      const arrow = document.getElementById('glowing-arrow');
+      const injectBtn = document.getElementById('inject-btn');
+      const aiWaiting = document.getElementById('ai-waiting');
+      const aiResponse = document.getElementById('ai-response-box');
+      const aiLabel = document.getElementById('ai-label');
+      const btn = document.getElementById('btn-3');
+      const typewriterEl = document.getElementById('typewriter-3');
+      
+      arrow.classList.remove('flowing');
+      injectBtn.disabled = false;
+      injectBtn.style.display = 'block';
+      aiWaiting.style.display = 'flex';
+      aiWaiting.classList.remove('awake');
+      aiResponse.classList.remove('visible');
+      aiLabel.textContent = 'AI (waiting)';
+      btn.disabled = true;
+      typewriterEl.innerHTML = '';
+    }
+
+    function injectContext() {
+      if (injectCompleted) return;
+      injectCompleted = true;
+      
+      const arrow = document.getElementById('glowing-arrow');
+      const injectBtn = document.getElementById('inject-btn');
+      const aiWaiting = document.getElementById('ai-waiting');
+      const aiResponse = document.getElementById('ai-response-box');
+      const aiLabel = document.getElementById('ai-label');
+      const btn = document.getElementById('btn-3');
+      const typewriterEl = document.getElementById('typewriter-3');
+      
+      injectBtn.disabled = true;
+      arrow.classList.add('flowing');
+      
+      const timer = setTimeout(() => {
+        aiWaiting.classList.add('awake');
+        aiLabel.textContent = 'AI (with context)';
+        
+        const timer2 = setTimeout(() => {
+          aiWaiting.style.display = 'none';
+          aiResponse.classList.add('visible');
+          
+          typewriter(typewriterEl, typewriterText3, 18, () => {
+            const timer3 = setTimeout(() => {
+              btn.disabled = false;
+            }, 600);
+            activeTimers.push(timer3);
+          });
+        }, 600);
+        activeTimers.push(timer2);
+      }, 600);
+      activeTimers.push(timer);
+    }
+
+    // Stage 4: Pipeline
+    function initStage4() {
+      const btn = document.getElementById('btn-4');
+      const pipelineLine = document.getElementById('pipeline-line');
+      btn.disabled = true;
+      pipelineLine.classList.remove('visible');
+      
+      const nodes = document.querySelectorAll('.pipeline-node');
+      nodes.forEach(n => n.classList.remove('visible'));
+      
+      let delay = 0;
+      nodes.forEach((node, i) => {
+        const timer = setTimeout(() => {
+          node.classList.add('visible');
+          
+          if (i === nodes.length - 1) {
+            const timer2 = setTimeout(() => {
+              pipelineLine.classList.add('visible');
+              const timer3 = setTimeout(() => {
+                btn.disabled = false;
+              }, 500);
+              activeTimers.push(timer3);
+            }, 500);
+            activeTimers.push(timer2);
+          }
+        }, delay);
+        activeTimers.push(timer);
+        delay += 500;
+      });
+    }
+
+    // Stage 5: Recap
+    function initStage5() {
+      const cards = document.querySelectorAll('.takeaway-card');
+      cards.forEach(card => {
+        card.classList.remove('visible');
+        void card.offsetWidth; // Trigger reflow
+        card.classList.add('visible');
+      });
+    }
+
+    function explainVectorDB() {
+      // This would be called if embedded in an environment that supports it
+      if (typeof sendPrompt === 'function') {
+        sendPrompt('Explain what a vector database actually is');
+      } else {
+        alert('A vector database stores data as mathematical "vectors" — points in high-dimensional space. When you search, it finds the closest points, which means semantically similar results. Think of it as a librarian who finds books by meaning, not just keywords.');
+      }
+    }
+
+    // Initialize
+    updateDots();
+  </script>
+</body>
+</html>
