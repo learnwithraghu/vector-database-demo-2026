@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speed Search Challenge</title>
+    <!-- Use KodeKloud style fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container">
+
+        <!-- View 1: Intro -->
+        <main id="view-intro" class="view active">
+            <header>
+                <div class="badge">Interactive Lab</div>
+                <h1>Needle in a Haystack</h1>
+                <p class="subtitle">Speed Search Challenge</p>
+            </header>
+
+            <div class="content-box">
+                <h2>The Challenge</h2>
+                <p>Welcome to the speed search challenge. Your goal is to find the single best match for the following
+                    semantic query hidden among 50 items.</p>
+
+                <div class="query-box">
+                    <span class="label">Query:</span>
+                    <span class="query-text">"a device for taking pictures"</span>
+                </div>
+
+                <div class="instructions">
+                    <div class="instruction-step">
+                        <div class="step-num">1</div>
+                        <div><strong>Round 1 (Keyword Style):</strong> You will manually scan the list to find the
+                            match. A timer will track your speed.</div>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-num">2</div>
+                        <div><strong>Round 2 (Vector Style):</strong> We will use vector search to find it instantly
+                            based on semantic meaning.</div>
+                    </div>
+                </div>
+
+                <button id="btn-start-round1" class="btn btn-primary">Start Round 1</button>
+            </div>
+        </main>
+
+        <!-- View 2: Round 1 (Manual/Keyword) -->
+        <main id="view-round1" class="view">
+            <div class="top-bar">
+                <div class="current-query">
+                    <span class="label">Find:</span> "a device for taking pictures"
+                </div>
+                <div class="timer-display">
+                    <span class="label">Time:</span> <span id="timer-r1">0.00</span>s
+                </div>
+            </div>
+
+            <div class="view-header">
+                <h2>Round 1: Manual Search</h2>
+                <p>Scroll through the cards and click the best match.</p>
+            </div>
+
+            <div id="card-grid-r1" class="card-grid">
+                <!-- Cards injected by JS -->
+            </div>
+        </main>
+
+        <!-- View 3: Round 2 (Vector) -->
+        <main id="view-round2" class="view">
+            <div class="top-bar">
+                <div class="current-query">
+                    <span class="label">Query:</span> "a device for taking pictures"
+                </div>
+                <div class="timer-display">
+                    <span class="label">Time:</span> <span id="timer-r2">0.00</span>s
+                </div>
+            </div>
+
+            <div class="view-header">
+                <h2>Round 2: Vector Search</h2>
+                <p>The AI will use cosine similarity to find the semantic match.</p>
+            </div>
+
+            <div class="action-panel">
+                <button id="btn-run-vector" class="btn btn-secondary">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="icon">
+                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                    Run Vector Search
+                </button>
+            </div>
+
+            <div id="card-grid-r2" class="card-grid">
+                <!-- Cards injected by JS -->
+            </div>
+        </main>
+
+        <!-- View 4: Conclusion -->
+        <main id="view-conclusion" class="view">
+            <header>
+                <h1>Challenge Results</h1>
+            </header>
+
+            <div class="results-grid">
+                <div class="result-card user-result">
+                    <h3>Manual / Keyword Search</h3>
+                    <div class="time-value"><span id="final-time-r1">0.00</span>s</div>
+                    <p class="desc">Relies on exact text matches or manual scanning.</p>
+                </div>
+
+                <div class="vs-badge">VS</div>
+
+                <div class="result-card ai-result">
+                    <h3>Vector Search</h3>
+                    <div class="time-value highlight"><span id="final-time-r2">0.00</span>s</div>
+                    <p class="desc">Understands semantic meaning and conceptually related terms.</p>
+                </div>
+            </div>
+
+            <div class="lesson-box">
+                <h2>Key Lesson</h2>
+                <p class="lesson-text">"Keyword search breaks on semantic meaning. Vector search doesn't."</p>
+                <p class="lesson-subtext">Because vectors capture the <em>meaning</em> of words, the database knows that
+                    a "camera" is a device for taking pictures, even without sharing exact keywords with the prompt.</p>
+            </div>
+
+            <div style="text-align: center; margin-top: 2rem;">
+                <button id="btn-restart" class="btn btn-outline">Try Again</button>
+            </div>
+        </main>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
